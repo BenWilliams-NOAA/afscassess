@@ -906,3 +906,22 @@ base_plots <- function(year, folder, model_name, rec_age) {
   plot_swath(year, folder)
   plot_comps(year, folder)
 }
+
+plot_F <- function(year, model) {
+
+
+  read.csv(here::here(year, model, "processed", "bio_rec_f.csv")) %>%
+    dplyr::select(year, F) -> dat
+
+  png(filename=here::here(year, model, "figs", "fF.png"), width = 6.5, height = 6.5,
+      units = "in", type ="cairo", res = 200)
+
+  dat %>%
+    ggplot2::ggplot(ggplot2::aes(year, F)) +
+    ggplot2::geom_line() +
+    ggplot2::expand_limits(y=0) +
+    ggplot2::ylab("Fishing mortality rate (F)\n") +
+    afscassess::scale_x_tickr(data=dat, var=year, to=10, start = 0)
+
+  dev.off()
+}
