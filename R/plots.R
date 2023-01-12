@@ -925,3 +925,28 @@ plot_F <- function(year, model) {
 
   dev.off()
 }
+
+
+comp <- function(data, variable, fleet) {
+  var <- rlang::enquo(variable)
+
+  data %>%
+    dplyr::mutate(level = factor(.data[[var]]),
+                  Year = factor(Year)) %>%
+    dplyr::filter(groups == "obs") %>%
+    ggplot2::ggplot(ggplot2::aes(.data[[var]], value)) +
+    ggplot2::geom_col(ggplot2::aes(fill = level), width = 1, color = 1) +
+    ggplot2::facet_wrap(~Year, strip.position="right",
+                        dir = "v",
+                        ncol = 1) +
+    ggplot2::geom_point(data = dplyr::filter(data, groups == "pred"),
+                        ggplot2::aes(.data[[var]], value, group = 1)) +
+    ggplot2::theme(panel.spacing.y = grid::unit(0, "mm")) +
+    ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank()) +
+    ggplot2::xlab(Hmisc::capitalize(variable)) +
+    ggplot2::ylab(paste0(Hmisc::capitalize(fleet)," ", variable,  " composition")) +
+    afscassess::scale_x_tickr(data=data, var=.data[[var]], start = 0, min = 5) +
+    ggplot2::theme(legend.position = "none")
+}
+
