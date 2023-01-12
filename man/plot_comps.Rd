@@ -4,16 +4,18 @@
 \alias{plot_comps}
 \title{Plot age and length compositions}
 \usage{
-plot_comps(year, model)
+plot_comps(year, folder, save = TRUE)
 }
 \arguments{
 \item{year}{= assessment year}
 
-\item{model}{= folder the model lives in}
+\item{folder}{= folder the model lives in}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Plot age and length compositions
 }
 \examples{
-plot_comps(year, model)
+plot_comps(year, folder)
 }

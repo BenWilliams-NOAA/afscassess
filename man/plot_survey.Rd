@@ -4,16 +4,18 @@
 \alias{plot_survey}
 \title{Plot survey biomass}
 \usage{
-plot_survey(year, model)
+plot_survey(year, folder, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
 
-\item{model}{folder model is in}
+\item{folder}{folder model is in}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Plot survey biomass
 }
 \examples{
-plot_survey(year, model)
+plot_survey(year, folder)
 }

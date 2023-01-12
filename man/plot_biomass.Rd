@@ -4,12 +4,14 @@
 \alias{plot_biomass}
 \title{Plot catch}
 \usage{
-plot_biomass(year, model)
+plot_biomass(year, folder, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
 
-\item{model}{folder name model is in}
+\item{folder}{folder name model is in}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Plot catch

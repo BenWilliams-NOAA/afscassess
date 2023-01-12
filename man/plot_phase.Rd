@@ -4,7 +4,7 @@
 \alias{plot_phase}
 \title{Phase plot}
 \usage{
-plot_phase(year, folder, model_name)
+plot_phase(year, folder, model_name, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
@@ -12,6 +12,8 @@ plot_phase(year, folder, model_name)
 \item{folder}{folder model is in}
 
 \item{model_name}{e.g. goa_nr_2020}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Phase plot

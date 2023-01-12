@@ -4,18 +4,20 @@
 \alias{plot_rec_ssb}
 \title{Recruitment/SSB plot}
 \usage{
-plot_rec_ssb(year, model, rec_age)
+plot_rec_ssb(year, folder, rec_age, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
 
-\item{model}{folder model is in}
+\item{folder}{folder model is in}
 
 \item{rec_age}{age at first recruitment}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Recruitment/SSB plot
 }
 \examples{
-plot_rec_ssb(year, model, rec_age)
+plot_rec_ssb(year, folder, rec_age)
 }

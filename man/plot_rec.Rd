@@ -4,12 +4,16 @@
 \alias{plot_rec}
 \title{Plot recruitment estimates}
 \usage{
-plot_rec(year, model, rec_age)
+plot_rec(year, folder, rec_age, save = TRUE)
 }
 \arguments{
 \item{year}{assessment year}
 
-\item{model}{folder the model is in}
+\item{folder}{folder the model is in}
+
+\item{rec_age}{age at first recruitment}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Plot recruitment estimates

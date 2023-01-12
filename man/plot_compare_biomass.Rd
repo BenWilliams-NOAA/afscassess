@@ -2,15 +2,21 @@
 % Please edit documentation in R/compare.R
 \name{plot_compare_biomass}
 \alias{plot_compare_biomass}
-\title{Plot MCMC estimated biomass}
+\title{Plot MCMC estimated biomass for multiple models}
 \usage{
-plot_compare_biomass(year, models = c("2020, plus_age", "2020, plus_length"))
+plot_compare_biomass(
+  year,
+  models = c("2020, plus_age", "2020, plus_length"),
+  save = TRUE
+)
 }
 \arguments{
 \item{year}{model year}
 
 \item{models}{year and folder the models are in e.g., c('2020, plus_age', '2020, plus_length')}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
-Plot MCMC estimated biomass
+Plot MCMC estimated biomass for multiple models
 }

@@ -4,10 +4,12 @@
 \alias{plot_re}
 \title{plot random effects model by GOA area}
 \usage{
-plot_re(file)
+plot_re(file, save = TRUE)
 }
 \arguments{
 \item{file}{where the files live e.g., "Y:/ABL_MESA/SAFES2020/Apportionment/Plot data - NR"}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 plot random effects model by GOA area

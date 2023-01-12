@@ -4,16 +4,18 @@
 \alias{plot_selex}
 \title{Plot selectivity at age}
 \usage{
-plot_selex(year, model)
+plot_selex(year, folder, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
 
-\item{model}{folder model is in}
+\item{folder}{folder model is in}
+
+\item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
 Plot selectivity at age
 }
 \examples{
-plot_selex(year, model)
+plot_selex(year, folder)
 }
