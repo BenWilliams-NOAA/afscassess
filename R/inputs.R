@@ -18,8 +18,8 @@
 #' clean_catch(year, TAC = c(2874, 2756, 3100))
 #' }
 #'
-clean_catch <- function(year, species, fishery = "fsh", TAC = c(3333, 2222, 1111), discard = NULL, gear = NULL, fixed_catch = NULL, save = TRUE){
-
+clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALSE, gear = FALSE, fixed_catch = NULL, save = TRUE){
+  yr = year 
   if(sum(TAC == c(3333, 2222, 1111)) == 3) {
     stop("check your TAC!")
   }
@@ -58,65 +58,59 @@ clean_catch <- function(year, species, fishery = "fsh", TAC = c(3333, 2222, 1111
     }
   }
 
-  names(fixed_catch) <- c("Year", "Catch")
+  names(fixed_catch) <- c("year", "catch")
 
   # Fishery catch data ----
-  vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_catch_data.csv"))) -> catch_data
-  vroom::vroom(here::here(year, "data", "raw",  paste0(fishery, "_obs_data.csv"))) -> obs_data
+  vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
+  vroom::vroom(here::here(year, "data", "raw",  "fsh_obs_data.csv")) -> obs_data
 
   # Estimate catch ratio in final year to end of year
   obs_data %>%
-    dplyr::filter(YEAR %in% (year-3):(year-1)) %>%
-    dplyr::group_by(YEAR) %>%
-    dplyr::mutate(tot_catch = sum(EXTRAPOLATED_WEIGHT),
-                  test_date = paste0(YEAR, substr(max(as.Date(catch_data$WEEK_END_DATE)),5,10))) %>%
-    dplyr::filter(HAUL_DATE <= test_date) %>%
-    dplyr::summarise(oct_catch = round(sum(EXTRAPOLATED_WEIGHT)),
-                     tot_catch = round(mean(tot_catch))) %>%
-    dplyr::ungroup() %>%
+    tidytable::filter(year %in% (yr-3):(yr-1)) %>%
+    tidytable::mutate(tot_catch = sum(extrapolated_weight),
+                      test_date = paste0(year, substr(max(as.Date(catch_data$week_end_date)),5,10)),
+                      .by = year) %>%
+    tidytable::filter(haul_date <= test_date) %>%
+    tidytable::summarise(oct_catch = round(sum(extrapolated_weight)),
+                         tot_catch = round(mean(tot_catch)),
+                         .by = year) %>%
     dplyr::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) %>%
-    dplyr::pull(ratio) -> ratio
+    tidytable::pull(ratio) -> ratio
 
   # Compute catch
   if(nrow(fixed_catch)>=1){
     catch_data %>%
-      dplyr::select(Year = YEAR, Catch = WEIGHT_POSTED) %>%
-      dplyr::filter(Year > max(fixed_catch$Year)) %>%
-      dplyr::group_by(Year) %>%
-      dplyr::summarise(Catch = round(sum(Catch), 4)) %>%
-      dplyr::bind_rows(fixed_catch) %>%
-      dplyr::arrange(Year) -> catch
+      tidytable::select(year, catch = weight_posted) %>%
+      tidytable::filter(year > max(fixed_catch$year)) %>%
+      tidytable::summarise(catch = round(sum(catch), 4), .by = year) %>%
+      tidytable::bind_rows(fixed_catch) %>%
+      tidytable::arrange(year) -> catch
   } else {
     catch_data %>%
-      dplyr::select(Year = YEAR, Catch = WEIGHT_POSTED) %>%
-      dplyr::group_by(Year) %>%
-      dplyr::summarise(Catch = round(sum(Catch), 4)) %>%
-      dplyr::arrange(Year) -> catch
+      dplyr::select(year, catch = weight_posted) %>%
+      dplyr::summarise(catch = round(sum(catch), 4), .by = year) %>%
+      tidytable::arrange(year) -> catch
   }
 
 
   # estimate yield ratio of previous 3 years relative to TAC
   catch %>%
-    dplyr::filter(Year %in% (year-3):(year-1)) %>%
-    dplyr::bind_cols(tac = TAC) %>%
-    dplyr::mutate(yld = Catch / tac) %>%
-    dplyr::summarise(yld = mean(yld)) %>%
-    dplyr::pull(yld) -> yld
+    tidytable::filter(year %in% (yr-3):(yr-1)) %>%
+    tidytable::bind_cols(tac = TAC) %>%
+    tidytable::mutate(yld = catch / tac) %>%
+    tidytable::summarise(yld = mean(yld)) %>%
+    tidytable::pull(yld) -> yld
 
   # estimate catch through end of the year
   catch %>%
-    dplyr::filter(Year==year) %>%
-    dplyr::mutate(catch = Catch * ratio) %>%
-    dplyr::pull(catch) -> proj_catch
+    tidytable::filter(year==yr) %>%
+    tidytable::mutate(catch = catch * ratio) %>%
+    tidytable::pull(catch) -> proj_catch
 
   data.frame(yld = yld, catch_rat = ratio, proj_catch = proj_catch) -> yld
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    vroom::vroom_write(catch, here::here(year, save, "data", paste0(fishery, "_catch.csv")), delim = ",")
-    vroom::vroom_write(yld, here::here(year, save, "data", "yld_rat.csv"), delim = ",")
-    catch
-  } else if(isTRUE(save)){
-    vroom::vroom_write(catch, here::here(year, "data", "output",  paste0(fishery, "_catch.csv")), delim = ",")
+  if(isTRUE(save)){
+    vroom::vroom_write(catch, here::here(year, "data", "output",  "fsh_catch.csv"), delim = ",")
     vroom::vroom_write(yld, here::here(year, "data", "output", "yld_rat.csv"), delim = ",")
     catch
   } else {
