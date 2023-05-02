@@ -20,7 +20,8 @@ Imports:
     stringr,
     tibble,
     tidytable,
-    vroom
+    vroom,
+    lubridate
 Remotes: afsc-assessments/afscdata     
 RoxygenNote: 7.2.3
 Depends: 
