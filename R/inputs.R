@@ -7,7 +7,7 @@
 #' @param TAC last three TAC in form: c(year-3, year-2, year-1)
 #' @param discard if summarizing catch by discard/retained is desired change to TRUE
 #' @param gear if summarizing catch by gear type is desired change to TRUE
-#' @param fixed_catch if early catch is frozen place the file in user_input folder (format: Year, Catch)
+#' @param fixed_catch if early catch is frozen place the file in user_input folder (format: year, catch)
 #' @param save
 #'
 #' @return
@@ -19,46 +19,37 @@
 #' }
 #'
 clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALSE, gear = FALSE, fixed_catch = NULL, save = TRUE){
-  yr = year 
+  years = (year-3):(year-1)
+  yr = year
   if(sum(TAC == c(3333, 2222, 1111)) == 3) {
     stop("check your TAC!")
   }
 
-  if(species == "REYE"){
-    species = "REBS"
-  }
-  if(species == "POP"){
-    species = "POPA"
-  }
-  if(species == "ATF"){
-    species = "ARTH"
-  }
-
   if(!is.null(fixed_catch)){
-    fixed_catch = vroom::vroom(here::here("data", "user_input", "fixed_catch"))
+    fc = vroom::vroom(here::here(year, "data", "user_input", fixed_catch))
   } else if(is.null(fixed_catch)){
     if(species == "NORK"){
-      fixed_catch = gfdata::goa_nork_catch_1961_1992
+      fc = afscdata::goa_nork_catch_1961_1992
     }
     if(species == "SABL"){
-      fixed_catch = gfdata::sabl_fixed_abundance %>%
+      fc = afscdata::sabl_fixed_abundance %>%
         dplyr::filter(variable == "catch")
     }
-    if(species == "REBS"){
-      fixed_catch = gfdata::goa_rebs_catch_1977_2004
+    if(species %in% c("REBS", "REYE")){
+      fc = afscdata::goa_rebs_catch_1977_2004
     }
     if(species == "DUSK"){
-      fixed_catch = gfdata::goa_dusk_catch_1977_1990
+      fc = afscdata::goa_dusk_catch_1977_1990
     }
-    if(species == "POPA"){
-      fixed_catch = gfdata::goa_pop_catch_1960_1990
+    if(species %in% c("POP", "POPA")){
+      fc = afscdata::goa_pop_catch_1960_1990
     }
-    if(species == "ARTH"){
-      fixed_catch = gfdata::goa_atf_catch_1961_1990
+    if(species %in% c("ATF", "ARTH")){
+      fc = afscdata::goa_atf_catch_1961_1990
     }
   }
 
-  names(fixed_catch) <- c("year", "catch")
+  names(fc) <- c("year", "catch")
 
   # Fishery catch data ----
   vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
@@ -66,48 +57,47 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
   # Estimate catch ratio in final year to end of year
   obs_data %>%
-    tidytable::filter(year %in% (yr-3):(yr-1)) %>%
-    tidytable::mutate(tot_catch = sum(extrapolated_weight),
-                      test_date = paste0(year, substr(max(as.Date(catch_data$week_end_date)),5,10)),
-                      .by = year) %>%
-    tidytable::filter(haul_date <= test_date) %>%
-    tidytable::summarise(oct_catch = round(sum(extrapolated_weight)),
-                         tot_catch = round(mean(tot_catch)),
-                         .by = year) %>%
-    dplyr::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) %>%
-    tidytable::pull(ratio) -> ratio
+    dplyr::filter(year %in% years) %>%
+    dplyr::group_by(year) %>%
+    dplyr::mutate(tot_catch = sum(extrapolated_weight),
+                      test_date = lubridate::`year<-`(max(catch_data$week_end_date), year)) %>%
+    dplyr::filter(haul_date <= test_date) %>%
+    dplyr::summarise(oct_catch = round(sum(extrapolated_weight)),
+                         tot_catch = round(mean(tot_catch))) %>%
+    dplyr::ungroup() %>%
+    dplyr::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) -> rat
 
   # Compute catch
-  if(nrow(fixed_catch)>=1){
+  if(nrow(fc)>=1){
     catch_data %>%
-      tidytable::select(year, catch = weight_posted) %>%
-      tidytable::filter(year > max(fixed_catch$year)) %>%
-      tidytable::summarise(catch = round(sum(catch), 4), .by = year) %>%
-      tidytable::bind_rows(fixed_catch) %>%
-      tidytable::arrange(year) -> catch
+      dplyr::select(year, catch = weight_posted) %>%
+      dplyr::filter(year > max(fc$year)) %>%
+      dplyr::group_by(year) %>%
+      dplyr::summarise(catch = round(sum(catch), 4)) %>%
+      dplyr::ungroup() %>%
+      dplyr::bind_rows(fc) %>%
+      dplyr::arrange(year) -> catch
   } else {
     catch_data %>%
       dplyr::select(year, catch = weight_posted) %>%
-      dplyr::summarise(catch = round(sum(catch), 4), .by = year) %>%
-      tidytable::arrange(year) -> catch
+      dplyr::group_by(year) %>%
+      dplyr::summarise(catch = round(sum(catch), 4)) %>%
+      dplyr::ungroup() %>%
+      dplyr::arrange(year) -> catch
   }
 
 
   # estimate yield ratio of previous 3 years relative to TAC
   catch %>%
-    tidytable::filter(year %in% (yr-3):(yr-1)) %>%
-    tidytable::bind_cols(tac = TAC) %>%
-    tidytable::mutate(yld = catch / tac) %>%
-    tidytable::summarise(yld = mean(yld)) %>%
-    tidytable::pull(yld) -> yld
+    dplyr::filter(year %in% years) %>%
+    dplyr::bind_cols(tac = TAC) %>%
+    dplyr::summarise(yld = mean(catch / tac)) -> yield
 
   # estimate catch through end of the year
   catch %>%
-    tidytable::filter(year==yr) %>%
-    tidytable::mutate(catch = catch * ratio) %>%
-    tidytable::pull(catch) -> proj_catch
-
-  data.frame(yld = yld, catch_rat = ratio, proj_catch = proj_catch) -> yld
+    dplyr::filter(year==yr) %>%
+    dplyr::mutate(proj_catch = catch * rat$ratio) %>%
+    dplyr::bind_cols(rat, yield) -> yld
 
   if(isTRUE(save)){
     vroom::vroom_write(catch, here::here(year, "data", "output",  "fsh_catch.csv"), delim = ",")
@@ -120,7 +110,6 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
 }
 
-
 #' survey biomass
 #'
 #' @param year of interest
@@ -130,15 +119,15 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #' @param save save to default location
 #'
 #' @return
-#' @export ts_biomass
+#' @export bts_biomass
 #'
 #' @examples
 #'
-ts_biomass <- function(year, area = "goa", file = NULL, rmv_yrs = NULL, save = TRUE){
+bts_biomass <- function(year, area = "goa", file = NULL, rmv_yrs = NULL, save = TRUE){
 
   if(is.null(file)){
 
-    read.csv(here::here(year, "data", "raw", "goa_ts_biomass_data.csv")) %>%
+    vroom::vroom(here::here(year, "data", "raw", "goa_ts_biomass_data.csv")) %>%
       dplyr::rename_all(tolower)  -> df
 
     # sablefish are different...
@@ -152,29 +141,28 @@ ts_biomass <- function(year, area = "goa", file = NULL, rmv_yrs = NULL, save = T
                       uci = biom + 1.96 * se) -> sb
     } else {
       df %>%
-        dplyr::group_by(year) %>%
-        dplyr::summarise(biomass = sum(total_biomass),
-                         se = sqrt(sum(biomass_var)),
-                         lci = biomass - 1.96 * se,
-                         uci = biomass + 1.96 * se) %>%
-        dplyr::mutate(lci = ifelse(lci < 0, 0, lci)) %>%
-        dplyr::mutate_if(is.double, round) %>%
-        dplyr::filter(biomass > 0) -> sb
+        tidytable::summarise(biomass = sum(total_biomass),
+                             se = sqrt(sum(biomass_var)),
+                             .by=year) %>%
+        tidytable::mutate(lci = biomass - 1.96 * se,
+                          uci = biomass + 1.96 * se,
+                          lci = ifelse(lci < 0, 0, lci)) %>%
+        tidytable::mutate(tidytable::across(tidytable::where(is.double), round)) %>%
+        tidytable::filter(biomass > 0) -> sb
     }
   } else {
-    read.csv(here::here(year, "data", "user_input", file)) -> sb
+    vroom::vroom(here::here(year, "data", "user_input", file)) -> sb
   }
 
   if(!is.null(rmv_yrs)){
     sb %in%
-      dplyr::filter(!(year %in% rmv_yrs)) -> sb
+      tidytable::filter(!(year %in% rmv_yrs)) -> sb
   }
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    write.csv(sb, here::here(year, save, "data", paste0(area, "_ts_biomass.csv")), row.names = FALSE)
-  } else if(isTRUE(save)){
-      write.csv(sb, here::here(year, "data", "output", paste0(area, "_ts_biomass.csv")), row.names = FALSE)
-    }
+  if(isTRUE(save)){
+    vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_bts_biomass.csv")), delim=",")
+  }
+
     sb
 
 
