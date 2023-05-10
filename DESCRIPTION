@@ -21,7 +21,8 @@ Imports:
     tibble,
     tidytable,
     vroom,
-    lubridate
+    lubridate,
+    magrittr
 Remotes: afsc-assessments/afscdata     
 RoxygenNote: 7.2.3
 Depends: 
