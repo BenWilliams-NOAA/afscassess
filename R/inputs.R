@@ -47,6 +47,9 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
     if(species %in% c("ATF", "ARTH")){
       fc = afscdata::goa_atf_catch_1961_1990
     }
+    if(species == "FSOL"){
+      fc = afscdata::goa_fhs_catch_1978_1990
+    }
   }
 
   names(fc) <- c("year", "catch")
