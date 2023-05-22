@@ -116,7 +116,8 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #' survey biomass
 #'
 #' @param year of interest
-#' @param area e.g., "goa"
+#' @param area options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area
+#' @param by "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
 #' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")
 #' @param rmv_yrs any survey years to exclude
 #' @param save save to default location
@@ -126,11 +127,14 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #'
 #' @examples
 #'
-bts_biomass <- function(year, area = "goa", file = NULL, rmv_yrs = NULL, save = TRUE){
+bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs = NULL, save = TRUE){
+
+  area = tolower(area)
+  by = tolower(by)
 
   if(is.null(file)){
 
-    vroom::vroom(here::here(year, "data", "raw", "goa_ts_biomass_data.csv")) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", by, "_bts_biomass_data.csv")) %>%
       dplyr::rename_all(tolower)  -> df
 
     # sablefish are different...
@@ -158,8 +162,7 @@ bts_biomass <- function(year, area = "goa", file = NULL, rmv_yrs = NULL, save = 
   }
 
   if(!is.null(rmv_yrs)){
-    sb %in%
-      tidytable::filter(!(year %in% rmv_yrs)) -> sb
+    sb <- tidytable::filter(sb, !(year %in% rmv_yrs))
   }
 
   if(isTRUE(save)){
