@@ -134,7 +134,7 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
 
   if(is.null(file)){
 
-    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", by, "_bts_biomass_data.csv")) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", by, "_bts_biomass_data.csv"))) %>%
       dplyr::rename_all(tolower)  -> df
 
     # sablefish are different...
