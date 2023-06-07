@@ -555,13 +555,12 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
 #' @param save save in the default location
 #'
 #' @return
-#' @export ts_age_comp
+#' @export bts_age_comp
 #'
-#' @examples ts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
-ts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
+#' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
+bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_ts_age_specimen_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_age_specimen_data.csv"))) %>%
     dplyr::filter(!is.na(age)) %>%
     dplyr::group_by(year) %>%
     dplyr::summarise(n_s = dplyr::n(),
