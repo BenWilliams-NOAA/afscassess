@@ -494,51 +494,50 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
 #' fishery age composition analysis
 #'
 #' @param year assessment year
-#' @param fishery default is fsh1, change if age comps from multiple fisheries (e.g., fsh2)
+#' @param fishery default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
-#' @param save whether to save the file
+#' @param rmv_yrs any years to remove form the age comp e.g. c(1987, 1989)
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param save whether to save the file - wll be placed in "year/data/output" folder
 #'
 #' @return
 #' @export  fish_age_comp
 #'
 #' @examples
 #' \dontrun{
-#' fish_age_comp(year, fishery = "fsh1", rec_age, plus_age)
+#' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, save = TRUE){
+fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_age_comp_data.csv")),
-               col_types = list(HAUL_JOIN = "c",
-                                PORT_JOIN = "c")) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::filter(age>=rec_age) %>%
-    dplyr::mutate(age = ifelse(age>plus_age, plus_age, age)) %>%
-    dplyr::group_by(year) %>%
-    dplyr::mutate(tot = dplyr::n()) %>%
-    dplyr::filter(tot>49) %>%
-    dplyr::mutate(n_h = length(unique(na.omit(haul_join))) +
-                    length(unique(na.omit(port_join)))) %>%
-    dplyr::group_by(year, age) %>%
-    dplyr::summarise(n_s = mean(tot),
-                     n_h = mean(n_h),
-                     age_tot = dplyr::n()) %>%
-    dplyr::mutate(prop = age_tot / n_s) %>%
-    dplyr::left_join(expand.grid(year = unique(.$year),
-                                 age = rec_age:plus_age), .) %>%
-    tidyr::replace_na(list(prop = 0)) %>%
-    dplyr::group_by(year) %>%
-    dplyr::mutate(AA_Index = 1,
-                  n_s = mean(n_s, na.rm = T),
-                  n_h = mean(n_h, na.rm = T)) %>%
-    dplyr::select(-age_tot) %>%
-    tidyr::pivot_wider(names_from = age, values_from = prop) -> fac
+  vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    tidytable::filter(age>=rec_age, !(year %in% rmv_yrs), !is.na(length), !is.na(performance)) %>%
+    tidytable::mutate(age = ifelse(age>plus_age, plus_age, age)) %>%
+    tidytable::mutate(tot = tidytable::n(), .by = year) %>%
+    tidytable::filter(tot>49) %>%
+    tidytable::mutate(n_h = length(unique(na.omit(haul_join))) +
+                        length(unique(na.omit(port_join))),
+                      .by = year) %>%
+    tidytable::summarise(n_s = mean(tot),
+                         n_h = mean(n_h),
+                         age_tot = tidytable::n(),
+                         .by = c(year, age)) %>%
+    tidytable::mutate(prop = age_tot / n_s) %>%
+    tidytable::left_join(expand.grid(year = unique(.$year),
+                                     age = rec_age:plus_age), .) %>%
+    tidytable::replace_na(list(prop = 0)) %>%
+    tidytable::mutate(AA_Index = 1,
+                      n_s = mean(n_s, na.rm = T),
+                      n_h = mean(n_h, na.rm = T),
+                      .by = year) %>%
+    tidytable::select(-age_tot) %>%
+    tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    readr::write_csv(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")))
+  if(!(isnull(alt))) {
+    vroom::vroom_write(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")), ",")
     fac
   } else if(isTRUE(save)) {
-    readr::write_csv(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")))
+    vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")), ",")
     fac
   } else {
     fac
