@@ -30,6 +30,9 @@ sp_switch <- function(species) {
   sp
 }
 
+# make data.table work
+.datatable.aware <- TRUE
+
 #' helper function for comp data
 #'
 #' obs  observed data from .rep file
