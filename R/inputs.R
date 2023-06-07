@@ -148,14 +148,14 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
                       uci = biom + 1.96 * se) -> sb
     } else {
       df %>%
-        tidytable::summarise(biomass = sum(total_biomass),
-                             se = sqrt(sum(biomass_var)),
-                             .by=year) %>%
-        tidytable::mutate(lci = biomass - 1.96 * se,
+        dplyr::group_by(year) %>%
+        dplyr::summarise(biomass = sum(total_biomass),
+                             se = sqrt(sum(biomass_var))) %>%
+        dplyr::mutate(lci = biomass - 1.96 * se,
                           uci = biomass + 1.96 * se,
                           lci = ifelse(lci < 0, 0, lci)) %>%
-        tidytable::mutate(tidytable::across(tidytable::where(is.double), round)) %>%
-        tidytable::filter(biomass > 0) -> sb
+        dplyr::mutate(dplyr::across(dplyr::where(is.double), round)) %>%
+        dplyr::filter(biomass > 0) -> sb
     }
 
   } else {
@@ -163,7 +163,7 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
   }
 
   if(!is.null(rmv_yrs)){
-    sb <- tidytable::filter(sb, !(year %in% rmv_yrs))
+    sb <- dplyr::filter(sb, !(year %in% rmv_yrs))
   }
 
   if(isTRUE(save)){
