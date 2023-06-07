@@ -12,7 +12,7 @@
 #' @param ... future functions
 #'
 #' @return
-#' @export
+#' @export process_results
 #'
 #' @examples process_results (year = 2020, model = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc = 1e+07, mcsave = 2000, len_bins = "lbins.csv")
 #'
@@ -225,7 +225,7 @@ process_results <- function(year, model, model_name, dat_name,
 #' @param last_f F value from the previous assessment
 #'
 #' @return The estimated F_OFL
-#' @export
+#' @export best_f
 #'
 #' @examples
 #'\dontrun{
@@ -595,7 +595,7 @@ run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave
 
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export
+#' @export fac_table
 fac_table <- function(year, model){
 
   options(scipen = 999)
@@ -626,7 +626,7 @@ fac_table <- function(year, model){
 
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export
+#' @export fsc_table
 fsc_table <- function(year, model){
 
   options(scipen = 999)
@@ -657,7 +657,7 @@ fsc_table <- function(year, model){
 
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export
+#' @export sac_table
 sac_table <- function(year, model){
 
   options(scipen = 999)
@@ -688,7 +688,7 @@ sac_table <- function(year, model){
 
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export
+#' @export ssc_table
 ssc_table <- function(year, model){
 
   options(scipen = 999)
