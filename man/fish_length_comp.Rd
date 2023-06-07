@@ -4,7 +4,14 @@
 \alias{fish_length_comp}
 \title{fishery length composition analysis}
 \usage{
-fish_length_comp(year, fishery = "fsh", rec_age, lenbins = NULL, save = TRUE)
+fish_length_comp(
+  year,
+  fishery = "fsh",
+  rec_age,
+  lenbins = NULL,
+  rmv_yrs = NULL,
+  save = TRUE
+)
 }
 \arguments{
 \item{year}{assessment year}

@@ -4,24 +4,35 @@
 \alias{fish_age_comp}
 \title{fishery age composition analysis}
 \usage{
-fish_age_comp(year, fishery = "fsh", rec_age, plus_age, save = TRUE)
+fish_age_comp(
+  year,
+  fishery = "fsh",
+  rec_age,
+  plus_age,
+  rmv_yrs = NULL,
+  save = TRUE
+)
 }
 \arguments{
 \item{year}{assessment year}
 
-\item{fishery}{default is fsh1, change if age comps from multiple fisheries (e.g., fsh2)}
+\item{fishery}{default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)}
 
 \item{rec_age}{recruitment age}
 
 \item{plus_age}{plus age group}
 
-\item{save}{whether to save the file}
+\item{rmv_yrs}{any years to remove form the age comp e.g. c(1987, 1989)}
+
+\item{save}{whether to save the file - wll be placed in "year/data/output" folder}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 }
 \description{
 fishery age composition analysis
 }
 \examples{
 \dontrun{
-fish_age_comp(year, fishery = "fsh1", rec_age, plus_age)
+fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 }
 }

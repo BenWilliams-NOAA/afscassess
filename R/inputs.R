@@ -33,7 +33,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
     }
     if(species == "SABL"){
       fc = afscdata::sabl_fixed_abundance %>%
-        dplyr::filter(variable == "catch")
+        tidytable::filter(variable == "catch")
     }
     if(species %in% c("REBS", "REYE")){
       fc = afscdata::goa_rebs_catch_1977_2004
@@ -60,47 +60,41 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
   # Estimate catch ratio in final year to end of year
   obs_data %>%
-    dplyr::filter(year %in% years) %>%
-    dplyr::group_by(year) %>%
-    dplyr::mutate(tot_catch = sum(extrapolated_weight),
-                      test_date = lubridate::`year<-`(max(catch_data$week_end_date), year)) %>%
-    dplyr::filter(haul_date <= test_date) %>%
-    dplyr::summarise(oct_catch = round(sum(extrapolated_weight)),
-                         tot_catch = round(mean(tot_catch))) %>%
-    dplyr::ungroup() %>%
-    dplyr::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) -> rat
+    tidytable::filter(year %in% years) %>%
+    tidytable::mutate(tot_catch = sum(extrapolated_weight),
+                      test_date = lubridate::`year<-`(max(catch_data$week_end_date), year), .by = year) %>%
+    tidytable::filter(haul_date <= test_date) %>%
+    tidytable::summarise(oct_catch = round(sum(extrapolated_weight)),
+                         tot_catch = round(mean(tot_catch)), .by = year) %>%
+    tidytable::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) -> rat
 
   # Compute catch
   if(nrow(fc)>=1){
     catch_data %>%
-      dplyr::select(year, catch = weight_posted) %>%
-      dplyr::filter(year > max(fc$year)) %>%
-      dplyr::group_by(year) %>%
-      dplyr::summarise(catch = round(sum(catch), 4)) %>%
-      dplyr::ungroup() %>%
-      dplyr::bind_rows(fc) %>%
-      dplyr::arrange(year) -> catch
+      tidytable::select(year, catch = weight_posted) %>%
+      tidytable::filter(year > max(fc$year)) %>%
+      tidytable::summarise(catch = round(sum(catch), 4), .by = year) %>%
+      tidytable::bind_rows(fc) %>%
+      tidytable::arrange(year) -> catch
   } else {
     catch_data %>%
-      dplyr::select(year, catch = weight_posted) %>%
-      dplyr::group_by(year) %>%
-      dplyr::summarise(catch = round(sum(catch), 4)) %>%
-      dplyr::ungroup() %>%
-      dplyr::arrange(year) -> catch
+      tidytable::select(year, catch = weight_posted) %>%
+      tidytable::summarise(catch = round(sum(catch), 4), .by = year) %>%
+      tidytable::arrange(year) -> catch
   }
 
 
   # estimate yield ratio of previous 3 years relative to TAC
   catch %>%
-    dplyr::filter(year %in% years) %>%
-    dplyr::bind_cols(tac = TAC) %>%
-    dplyr::summarise(yld = mean(catch / tac)) -> yield
+    tidytable::filter(year %in% years) %>%
+    tidytable::bind_cols(tac = TAC) %>%
+    tidytable::summarise(yld = mean(catch / tac)) -> yield
 
   # estimate catch through end of the year
   catch %>%
-    dplyr::filter(year==yr) %>%
-    dplyr::mutate(proj_catch = catch * rat$ratio) %>%
-    dplyr::bind_cols(rat, yield) -> yld
+    tidytable::filter(year==yr) %>%
+    tidytable::mutate(proj_catch = catch * rat$ratio) %>%
+    tidytable::bind_cols(rat, yield) -> yld
 
   if(isTRUE(save)){
     vroom::vroom_write(catch, here::here(year, "data", "output",  "fsh_catch.csv"), delim = ",")
@@ -208,30 +202,30 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
   nages = length(rec_age:plus_age)
 
   rt %>%
-    dplyr::filter(Species %in% sp_switch(species),
+    tidytable::filter(Species %in% sp_switch(species),
                   Region == area,
                   Read_Age > 0,
                   Test_Age > 0,
                   Final_Age > 0) %>%
-    dplyr::group_by(Test_Age, Read_Age) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::summarise(freq = dplyr::n()) -> dat
+    tidytable::group_by(Test_Age, Read_Age) %>%
+    tidytable::rename_all(tolower) %>%
+    tidytable::summarise(freq = tidytable::n()) -> dat
 
 
-  dplyr::left_join(expand.grid(test_age = unique(dat$test_age),
+  tidytable::left_join(expand.grid(test_age = unique(dat$test_age),
                                read_age = unique(dat$read_age)),
                    dat) %>%
-    tidyr::replace_na(list(freq = 0)) %>%
-    dplyr::group_by(test_age) %>%
-    dplyr::mutate(num = dplyr::case_when(test_age != read_age ~ freq)) %>%
-    dplyr::summarise(num = sum(num, na.rm = TRUE),
-                     den = sum(freq)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(ape = 1 - (num / den),
-                  ape = ifelse(is.nan(ape), 0, ape)) %>%
-    dplyr::select(age = test_age, ape, ss = den) %>%
-    dplyr::left_join(data.frame(age = min(dat$test_age):max(dat$test_age)), .) %>%
-    tidyr::replace_na(list(ape = -9, ss = -9)) -> dats
+    tidytable::replace_na(list(freq = 0)) %>%
+    tidytable::mutate(num = tidytable::case_when(test_age != read_age ~ freq),
+                      .by = test_age) %>%
+    tidytable::summarise(num = sum(num, na.rm = TRUE),
+                     den = sum(freq),
+                     .by = test_age) %>%
+    tidytable::mutate(ape = 1 - (num / den),
+                      ape = ifelse(is.nan(ape), 0, ape)) %>%
+    tidytable::select(age = test_age, ape, ss = den) %>%
+    tidytable::left_join(data.frame(age = min(dat$test_age):max(dat$test_age)), .) %>%
+    tidytable::replace_na(list(ape = -9, ss = -9)) -> dats
 
   c("# Number of obs", nrow(dats),
     "# Age vector", dats$age,
@@ -358,43 +352,38 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
   }
 
   vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_age_data.csv")) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::select(year, age, length) %>%
-    dplyr::filter(year>=1990, !is.na(age))  %>%
-    dplyr::select(-year) %>%
-    dplyr::group_by(age) %>%
-    dplyr::filter(dplyr::n()>1) %>%
-    dplyr::group_by(length) %>%
-    dplyr::mutate(n_l = dplyr::n()) %>%
-    dplyr::arrange(age, length) %>%
-    dplyr::group_by(age) %>%
-    dplyr::mutate(sample_size =  dplyr::n()) -> inter
+    tidytable::rename_all(tolower) %>%
+    tidytable::select(year, age, length) %>%
+    tidytable::filter(year>=1990, !is.na(age))  %>%
+    tidytable::select(-year) %>%
+    tidytable::filter(tidytable::n()>1, .by = age) %>%
+    tidytable::mutate(n_l = tidytable::n(), .by = length) %>%
+    tidytable::arrange(age, length) %>%
+    tidytable::group_by(age) %>%
+    tidytable::mutate(sample_size = tidytable::n()) -> inter
 
   vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_length_data.csv")) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::filter(year>=1990, !is.na(length)) -> dat
+    tidytable::rename_all(tolower) %>%
+    tidytable::filter(year>=1990, !is.na(length)) -> dat
 
   if(is.null(dat$frequency)){
     dat %>%
-      dplyr::group_by(length) %>%
-      dplyr::summarise(tot = dplyr::n()) -> dat
+      tidytable::summarise(tot = tidytable::n(), .by = length) -> dat
   } else {
     dat %>%
-      dplyr::select(frequency, length) %>%
-      dplyr::group_by(length) %>%
-      dplyr::summarise(tot = sum(frequency)) -> dat
+      tidytable::select(frequency, length) %>%
+      tidytable::summarise(tot = sum(frequency), .by = length) -> dat
   }
 
   dat %>%
-    dplyr::left_join(inter, .) %>%
-    dplyr::group_by(age, length) %>%
-    dplyr::mutate(prop =  dplyr::n() / n_l * tot) %>%
-    dplyr::distinct() %>%
-    dplyr::group_by(age) %>%
-    dplyr::summarise(sample_size = mean(sample_size),
+    tidytable::left_join(inter, .) %>%
+    tidytable::mutate(prop =  dplyr::n() / n_l * tot, .by = c(age, length)) %>%
+    tidytable::distinct() %>%
+    tidytable::summarise(sample_size = mean(sample_size),
                      Lbar = sum(prop * length) / sum(prop) * 0.1,
-                     SD_Lbar = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - Lbar)^2))) %>%
-    dplyr::filter(SD_Lbar>=0.01) -> laa_stats
+                     SD_Lbar = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - Lbar)^2)),
+                     .by = age) %>%
+    tidytable::filter(SD_Lbar>=0.01) -> laa_stats
 
   if(!(isTRUE(save)) | !(isFALSE(save)) | !(is.null(save))){
     vroom::vroom_write(laa_stats, here::here(year, save, "data", "laa_stats.csv"))
@@ -590,7 +579,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 
 
   if(!is.null(rmv_yrs)){
-    age_comp |>
+    age_comp  %>%
       tidytable::filter.(!(year %in% rmv_yrs)) -> age_comp
   }
 
@@ -616,7 +605,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @export fish_length_comp
 #'
 #' @examples
-fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, save = TRUE){
+fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, save = TRUE){
 
   if(is.null(lenbins)){
     stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
@@ -624,37 +613,39 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, sav
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
-  Y = year
-  read.csv(here::here(year, "data", "raw", paste0(fishery, "_age_comp_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::filter(!is.na(age), age>=rec_age, year>1990 & year<Y) %>%
-    dplyr::group_by(year) %>%
-    dplyr::tally(name = "age") %>%
-    dplyr::filter(age >= 50) %>%
-    dplyr::ungroup() -> ages
+  yr = year
+  read.csv(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    tidytable::filter(!is.na(age), age>=rec_age) %>%
+    tidytable::group_by(year) %>%
+    tidytable::tally(name = "age") %>%
+    tidytable::filter(age >= 50) %>%
+    tidytable::ungroup() -> ages
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_comp_data.csv")),
-               col_types = list(HAUL_JOIN = "c",
-                                PORT_JOIN = "c")) %>%
-    dplyr::rename_all(tolower) %>%
-    dplyr::filter(!(year %in% unique(ages$year)), year>1990 & year<Y) %>%
-    dplyr::group_by(year) %>%
-    dplyr::mutate(tot = sum(frequency),
-                  length = ifelse(length >= max(lenbins), max(lenbins), length),
-                  n_h = length(unique(na.omit(haul_join))) + length(unique(na.omit(port_join)))) %>%
-    dplyr::group_by(year, length) %>%
-    dplyr::summarise(n_s = mean(tot),
-                     n_h = mean(n_h),
-                     length_tot = sum(frequency)) %>%
-    dplyr::mutate(prop = length_tot / n_s) %>%
-    dplyr::left_join(expand.grid(year = unique(.$year), length = lenbins), .) %>%
-    tidyr::replace_na(list(prop = 0)) %>%
-    dplyr::group_by(year) %>%
-    dplyr::mutate(SA_Index = 1,
-                  n_s = mean(n_s, na.rm = T),
-                  n_h = mean(n_h, na.rm = T)) %>%
-    dplyr::select(-length_tot) %>%
-    tidyr::pivot_wider(names_from = length, values_from = prop) -> flc
+  vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.csv"))) %>%
+    tidytable::filter(!(year %in% unique(ages$year))) %>%
+    tidytable::mutate(tot = sum(frequency),
+                      length = ifelse(length >= max(lenbins), max(lenbins), length),
+                      n_h = length(unique(na.omit(haul_join))) + length(unique(na.omit(port_join))),
+                      .by = year) %>%
+    tidytable::summarise(n_s = mean(tot),
+                         n_h = mean(n_h),
+                         length_tot = sum(frequency),
+                         .by = c(year, length)) %>%
+    tidytable::mutate(prop = length_tot / n_s) %>%
+    tidytable::left_join(expand.grid(year = unique(.$year), length = lenbins), .) %>%
+    tidytable::replace_na(list(prop = 0)) %>%
+    tidytable::mutate(SA_Index = 1,
+                      n_s = mean(n_s, na.rm = T),
+                      n_h = mean(n_h, na.rm = T),
+                      .by = year) %>%
+    tidytable::select(-length_tot) %>%
+    tidytable::pivot_wider(names_from = length, values_from = prop) -> flc
+
+  if(!is.null(rmv_yrs)){
+    flc  %>%
+      tidytable::filter(!(year %in% rmv_yrs)) -> flc
+  }
+
 
   if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
     vroom::vroom_write(flc, here::here(year, save, "data", paste0(fishery, "_length_comp.csv")), ",")
