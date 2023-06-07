@@ -148,15 +148,16 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
                       uci = biom + 1.96 * se) -> sb
     } else {
       df %>%
-        dplyr::group_by(year) %>%
-        dplyr::summarise(biomass = sum(total_biomass),
-                         se = sqrt(sum(biomass_var))) %>%
-        dplyr::mutate(lci = biomass - 1.96 * se,
-                      uci = biomass + 1.96 * se,
-                      lci = ifelse(lci < 0, 0, lci)) %>%
-        dplyr::mutate(dplyr::across(dplyr::where(is.double), round)) %>%
-        dplyr::filter(biomass > 0) -> sb
+        tidytable::summarise(biomass = sum(total_biomass),
+                             se = sqrt(sum(biomass_var)),
+                             .by=year) %>%
+        tidytable::mutate(lci = biomass - 1.96 * se,
+                          uci = biomass + 1.96 * se,
+                          lci = ifelse(lci < 0, 0, lci)) %>%
+        tidytable::mutate(tidytable::across(tidytable::where(is.double), round)) %>%
+        tidytable::filter(biomass > 0) -> sb
     }
+
   } else {
     vroom::vroom(here::here(year, "data", "user_input", file)) -> sb
   }
@@ -169,7 +170,7 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
     vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_bts_biomass.csv")), delim=",")
   }
 
-    sb
+  sb
 
 
 }
