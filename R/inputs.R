@@ -523,7 +523,7 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
     tidytable::select(-age_tot) %>%
     tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
 
-  if(!(isnull(alt))) {
+  if(!(is.null(alt))) {
     vroom::vroom_write(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")), ",")
     fac
   } else if(isTRUE(save)) {
