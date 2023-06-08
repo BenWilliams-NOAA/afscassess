@@ -498,7 +498,7 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
 #' \dontrun{
 #' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
+fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, alt = NULL, save = TRUE){
 
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
     tidytable::filter(age>=rec_age, !(year %in% rmv_yrs), !is.na(length), !is.na(performance)) %>%
