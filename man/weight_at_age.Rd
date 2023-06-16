@@ -4,7 +4,14 @@
 \alias{weight_at_age}
 \title{estimate allometric relationship and weight-at-age}
 \usage{
-weight_at_age(year, admb_home = NULL, rec_age, area = "goa", save = TRUE)
+weight_at_age(
+  year,
+  admb_home = NULL,
+  rec_age,
+  area = "goa",
+  alt = NULL,
+  save = TRUE
+)
 }
 \arguments{
 \item{year}{model year}
@@ -14,6 +21,8 @@ weight_at_age(year, admb_home = NULL, rec_age, area = "goa", save = TRUE)
 \item{rec_age}{recruitment age}
 
 \item{area}{currently fixed at "goa"}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 
 \item{save}{save in the default location}
 }
