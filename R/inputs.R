@@ -115,7 +115,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #'
 #' @param year of interest
 #' @param area options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area
-#' @param by "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
+#' @param type "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
 #' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")
 #' @param rmv_yrs any survey years to exclude
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
@@ -126,14 +126,14 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #'
 #' @examples
 #'
-bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
+bts_biomass <- function(year, area = "goa", type = "total", file = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
   area = tolower(area)
-  by = tolower(by)
+  type = tolower(type)
 
   if(is.null(file)){
 
-    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", by, "_bts_biomass_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", type, "_bts_biomass_data.csv"))) %>%
       dplyr::rename_all(tolower)  -> df
 
     # sablefish are different...
@@ -166,10 +166,10 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
   }
 
   if(!(is.null(alt))) {
-    vroom::vroom_write(sb, here::here(year, alt, "data", paste0(area, "_bts_biomass.csv")), ",")
+    vroom::vroom_write(sb, here::here(year, alt, "data", paste(area, type, "bts_biomass.csv", sep="_")), ",")
     sb
   } else if(isTRUE(save)){
-    vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_bts_biomass.csv")), delim=",")
+    vroom::vroom_write(sb, here::here(year, "data", "output", paste(area, type, "bts_biomass.csv", sep="_")), delim=",")
   } else {
     sb
   }
