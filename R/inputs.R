@@ -775,6 +775,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
 #' @examples weight_at_age(year = 2020, admb_home = "C:/Program Files (x86)/ADMB-12.1", rec_age = 2)
 weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NULL, save = TRUE){
 
+  area = tolower(area)
   if(is.null(admb_home)){
     R2admb::setup_admb()
   } else {
@@ -784,17 +785,14 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
   if (!file.exists(here::here(year,"data", "output", "ae_model.csv"))){
     stop("You must first run the age-error function 'ageage()")
   } else {
-    if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    nages_m = nrow(vroom::vroom(here::here(year, save, "data", "ae_model.csv")))
-    } else {
-      nages_m = nrow(vroom::vroom(here::here(year, "data", "output", "ae_model.csv")))
-    }
-    ages_m = rec_age:(rec_age + nages_m - 1)
+    nages_m = nrow(vroom::vroom(here::here(year, "data", "output", "ae_model.csv")))
   }
+  ages_m = rec_age:(rec_age + nages_m - 1)
+
 
 
   # data ----
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_saa_length_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", "bts_length_data.csv")) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::filter(year >= 1990, !is.na(length)) -> length_data_raw
 
@@ -806,7 +804,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
   }
 
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_saa_age_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", "bts_specimen_data.csv")) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::select(year, age, length, weight) %>%
     dplyr::filter(year >= 1990, !is.na(age))  %>%
@@ -921,9 +919,9 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
   # Write data
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
+  if(!is.null(alt)) {
     vroom::vroom_write(WaA_stats,
-                       here::here(year, save, "data", "waa_stats.csv"), ",")
+                       here::here(year, alt, "data", "waa_stats.csv"), ",")
   } else {
     vroom::vroom_write(WaA_stats,
                        here::here(year, "data", "output", "waa_stats.csv"), ",")
@@ -943,8 +941,8 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
 
   # Write data
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    vroom::vroom_write(lw_mdl_data, here::here(year, save, "data", "wal_stats.csv"), ",")
+  if(!is.null(alt)) {
+    vroom::vroom_write(lw_mdl_data, here::here(year, alt, "data", "wal_stats.csv"), ",")
   } else {
     vroom::vroom_write(lw_mdl_data,
                        here::here(year, "data", "output", "wal_stats.csv"), ",")
@@ -978,7 +976,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
   allo = data.frame(alpha_lw = alpha_lw, beta_lw = beta_lw)
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
+  if(!is.null(alt)) {
     vroom::vroom_write(allo, here::here(year, alt, "data", "alpha_beta_lw.csv"), ",")
   } else {
     vroom::vroom_write(allo, here::here(year, "data", "output", "alpha_beta_lw.csv"), ",")
