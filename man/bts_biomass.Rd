@@ -10,6 +10,7 @@ bts_biomass(
   by = "total",
   file = NULL,
   rmv_yrs = NULL,
+  alt = NULL,
   save = TRUE
 )
 }
@@ -23,6 +24,8 @@ bts_biomass(
 \item{file}{if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")}
 
 \item{rmv_yrs}{any survey years to exclude}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 
 \item{save}{save to default location}
 }

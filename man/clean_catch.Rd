@@ -11,6 +11,7 @@ clean_catch(
   discard = FALSE,
   gear = FALSE,
   fixed_catch = NULL,
+  alt = NULL,
   save = TRUE
 )
 }
@@ -26,6 +27,8 @@ clean_catch(
 \item{gear}{if summarizing catch by gear type is desired change to TRUE}
 
 \item{fixed_catch}{if early catch is frozen place the file in user_input folder (format: year, catch)}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 
 \item{save}{}
 

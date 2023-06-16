@@ -10,6 +10,7 @@ fish_age_comp(
   rec_age,
   plus_age,
   rmv_yrs = NULL,
+  alt = NULL,
   save = TRUE
 )
 }
@@ -24,9 +25,9 @@ fish_age_comp(
 
 \item{rmv_yrs}{any years to remove form the age comp e.g. c(1987, 1989)}
 
-\item{save}{whether to save the file - wll be placed in "year/data/output" folder}
-
 \item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+
+\item{save}{whether to save the file - wll be placed in "year/data/output" folder}
 }
 \description{
 fishery age composition analysis

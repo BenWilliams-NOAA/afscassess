@@ -8,7 +8,7 @@ concat_dat(
   year,
   species,
   area = "goa",
-  model,
+  folder,
   dat_name,
   rec_age,
   plus_age,
@@ -30,7 +30,7 @@ concat_dat(
 
 \item{area}{"goa", "bsai", "everywhere"}
 
-\item{model}{folder that the `.tpl` will be in}
+\item{folder}{folder that the `.tpl` will be in}
 
 \item{dat_name}{what to call the .dat file - ".dat" will be appended to the name}
 
@@ -58,6 +58,6 @@ concat_dat(
 Concatenate a .dat file
 }
 \examples{
-concat_dat(year = 2020, species = "NORK",  area = "goa", model = "base", dat_name = "goa_nr", rec_age = 2, plus_age = 45)
+concat_dat(year = 2020, species = "NORK",  area = "goa", folder = "base", dat_name = "goa_nr", rec_age = 2, plus_age = 45)
 
 }

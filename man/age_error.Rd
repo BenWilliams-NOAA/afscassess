@@ -13,6 +13,7 @@ age_error(
   rec_age = 2,
   plus_age = 45,
   max_age = 100,
+  alt = NULL,
   save = TRUE
 )
 }
@@ -30,6 +31,8 @@ age_error(
 \item{plus_age}{= max age for modeling}
 
 \item{max_age}{= max age for age error analysis - default = 100}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 
 \item{save}{= default is TRUE, FALSE outputs a list, names outputs to a data folder within a specific folder (e.g., save = "age_plus")}
 

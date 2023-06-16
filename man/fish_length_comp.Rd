@@ -23,6 +23,8 @@ fish_length_comp(
 \item{lenbins}{lenbin file if left NULL it looks for here::here(year, "data", "user_input", "len_bin_labels.csv")}
 
 \item{save}{}
+
+\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 }
 \description{
 fishery length composition analysis
