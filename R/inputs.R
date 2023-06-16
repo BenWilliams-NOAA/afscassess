@@ -8,6 +8,7 @@
 #' @param discard if summarizing catch by discard/retained is desired change to TRUE
 #' @param gear if summarizing catch by gear type is desired change to TRUE
 #' @param fixed_catch if early catch is frozen place the file in user_input folder (format: year, catch)
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #'
 #' @return
@@ -18,7 +19,7 @@
 #' clean_catch(year, TAC = c(2874, 2756, 3100))
 #' }
 #'
-clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALSE, gear = FALSE, fixed_catch = NULL, save = TRUE){
+clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALSE, gear = FALSE, fixed_catch = NULL, alt=NULL, save = TRUE){
   years = (year-3):(year-1)
   yr = year
   if(sum(TAC == c(3333, 2222, 1111)) == 3) {
@@ -96,14 +97,17 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
     tidytable::mutate(proj_catch = catch * rat$ratio) %>%
     tidytable::bind_cols(rat, yield) -> yld
 
-  if(isTRUE(save)){
+  if(!(is.null(alt))) {
+    vroom::vroom_write(catch, here::here(year, alt, "output",  "fsh_catch.csv"), delim = ",")
+    vroom::vroom_write(yld, here::here(year, alt, "output", "yld_rat.csv"), delim = ",")
+    catch
+  }else if(isTRUE(save)){
     vroom::vroom_write(catch, here::here(year, "data", "output",  "fsh_catch.csv"), delim = ",")
     vroom::vroom_write(yld, here::here(year, "data", "output", "yld_rat.csv"), delim = ",")
     catch
   } else {
     list(catch = catch, yld_rat = yld)
   }
-
 
 }
 
@@ -114,6 +118,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #' @param by "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
 #' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")
 #' @param rmv_yrs any survey years to exclude
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save to default location
 #'
 #' @return
@@ -121,7 +126,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #'
 #' @examples
 #'
-bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs = NULL, save = TRUE){
+bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
   area = tolower(area)
   by = tolower(by)
@@ -160,11 +165,16 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
     sb <- dplyr::filter(sb, !(year %in% rmv_yrs))
   }
 
-  if(isTRUE(save)){
+  if(!(is.null(alt))) {
+    vroom::vroom_write(sb, here::here(year, alt, "data", paste0(area, "_bts_biomass.csv")), ",")
+    sb
+  } else if(isTRUE(save)){
     vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_bts_biomass.csv")), delim=",")
+  } else {
+    sb
   }
 
-  sb
+
 
 
 }
@@ -180,6 +190,7 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
 #' @param rec_age = recruitment age
 #' @param plus_age = max age for modeling
 #' @param max_age = max age for age error analysis - default = 100
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save = default is TRUE, FALSE outputs a list, names outputs to a data folder within a specific folder (e.g., save = "age_plus")
 #'
 #' @return
@@ -187,7 +198,7 @@ bts_biomass <- function(year, area = "goa", by = "total", file = NULL, rmv_yrs =
 #'
 #' @examples ageage(species = "NORK", year = 2020, admb_home = NULL, area = "GOA", rec_age = 2, plus_age = 45, max_age = 100)
 
-age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GOA", rec_age = 2, plus_age = 45, max_age = 100, save = TRUE){
+age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GOA", rec_age = 2, plus_age = 45, max_age = 100, alt = NULL, save = TRUE){
 
 
   rt = vroom::vroom(here::here(year, "data", "user_input", reader_tester))
@@ -281,21 +292,19 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
   r = which(ae_Mdl[, nages]>=0.999)[1]
   ae_Mdl = ae_Mdl[1:r,]
 
-  if(isFALSE(save) | is.null(save)) {
-    list(mtx100 = mtx100, ae_sd = fits, ae_model = ae_Mdl)
-  } else if(isTRUE(save)) {
+
+  if(!is.null(alt)){
+    write.csv(mtx100, here::here(year, alt, "data", paste0("ae_mtx_", max_age, ".csv")), row.names = F)
+    vroom::vroom_write(fits,  here::here(year,alt, "data", "ae_SD.csv"), ",")
+    write.csv(ae_Mdl,  here::here(year, alt, "data", "ae_model.csv"), row.names = F)
+    ae_Mdl
+  } else if(isTRUE(save)){
     write.csv(mtx100, here::here(year, "data", "output", paste0("ae_mtx_", max_age, ".csv")), row.names = F)
     vroom::vroom_write(fits,  here::here(year,"data", "output", "ae_SD.csv"), ",")
     write.csv(ae_Mdl,  here::here(year, "data", "output", "ae_model.csv"), row.names = F)
     ae_Mdl
   } else {
-    if(dir.exists(here::here(year, save, "data")) == FALSE){
-      dir.create(here::here(year, save, "data"), recursive=TRUE)
-    }
-    write.csv(mtx100, here::here(year, save, "data", paste0("ae_mtx_", max_age, ".csv")), row.names = F)
-    vroom::vroom_write(fits,  here::here(year,save, "data", "ae_SD.csv"), ",")
-    write.csv(ae_Mdl,  here::here(year, save, "data", "ae_model.csv"), row.names = F)
-    ae_Mdl
+    list(mtx100 = mtx100, ae_sd = fits, ae_model = ae_Mdl)
   }
 
 }
@@ -385,8 +394,8 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
                      .by = age) %>%
     tidytable::filter(SD_Lbar>=0.01) -> laa_stats
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | !(is.null(save))){
-    vroom::vroom_write(laa_stats, here::here(year, save, "data", "laa_stats.csv"))
+  if(!is.null(alt)){
+    vroom::vroom_write(laa_stats, here::here(year, alt, "data", "laa_stats.csv"))
   } else {
     vroom::vroom_write(laa_stats, here::here(year, "data", "output", "laa_stats.csv"))
   }
@@ -442,8 +451,8 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
   b <- STD$value[2]
   (params <- cbind(Linf, k, t0, a, b))
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | !(is.null(save))) {
-      write.csv(params, here::here(year, save, "data", "lbar_params.csv"), row.names=FALSE)
+  if(!is.null(alt)) {
+      write.csv(params, here::here(year, alt, "data", "lbar_params.csv"), row.names=FALSE)
     } else {
       write.csv(params, here::here(year, "data", "output", "lbar_params.csv"), row.names=FALSE)
     }
@@ -467,18 +476,16 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
     dplyr::mutate(!!rev(names(.))[1] := 1 - rowSums(.[2:(ncol(.) - 1)])) %>%
     dplyr::mutate_at(2:ncol(.), round, 4) -> saa
 
-  if(isFALSE(save) | is.null(save)) {
+  if(!is.null(alt)){
+    vroom::vroom_write(saa, here::here(year, alt, "data", "saa.csv"), ",")
     saa
-  } else if(isTRUE(save)) {
-    readr::write_csv(saa, here::here(year, "data", "output", "saa.csv"))
+  } else if(isTRUE(save)){
+    vroom::vroom_write(saa, here::here(year, "data", "output", "saa.csv"), ",")
     saa
   } else {
-    if(dir.exists(here::here(year, save, "data")) == FALSE){
-      dir.create(here::here(year, save, "data"), recursive=TRUE)
-    }
-    readr::write_csv(saa, here::here(year, save, "data", "saa.csv"))
     saa
   }
+
 }
 
 #' fishery age composition analysis
@@ -498,7 +505,7 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
 #' \dontrun{
 #' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
+fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
     tidytable::filter(age>=rec_age, !(year %in% rmv_yrs), !is.na(length), !is.na(performance)) %>%
@@ -523,7 +530,7 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
     tidytable::select(-age_tot) %>%
     tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
 
-  if(!(isnull(alt))) {
+  if(!is.null(alt)) {
     vroom::vroom_write(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")), ",")
     fac
   } else if(isTRUE(save)) {
@@ -542,13 +549,14 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
 #' @param rec_age recruitment age
 #' @param plus_age plus group age
 #' @param rmv_yrs any survey years to exclude
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save in the default location
 #'
 #' @return
 #' @export bts_age_comp
 #'
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
-bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, save = TRUE){
+bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
   read.csv(here::here(year, "data", "raw", paste0(area, "_bts_age_specimen_data.csv"))) %>%
     dplyr::filter(!is.na(age)) %>%
@@ -583,10 +591,12 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
       tidytable::filter.(!(year %in% rmv_yrs)) -> age_comp
   }
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    readr::write_csv(age_comp, here::here(year, save, "data", paste0(area, "_ts_age_comp.csv")))
+  if(!is.null(alt)) {
+    vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
+    age_comp
   } else if(isTRUE(save)){
-      readr::write_csv(age_comp, here::here(year, "data", "output", paste0(area, "_ts_age_comp.csv")))
+    vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
+    age_comp
   }
 
   age_comp
@@ -599,6 +609,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @param fishery default is "fsh1"
 #' @param lenbins lenbin file if left NULL it looks for here::here(year, "data", "user_input", "len_bin_labels.csv")
 #' @param rec_age recruitment age
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #'
 #' @return
@@ -647,11 +658,12 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
   }
 
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    vroom::vroom_write(flc, here::here(year, save, "data", paste0(fishery, "_length_comp.csv")), ",")
+  if(!is.null(alt)) {
+    vroom::vroom_write(flc, here::here(year, alt, "data", paste0(fishery, "_length_comp.csv")), ",")
+    flc
   } else if(isTRUE(save)){
     vroom::vroom_write(flc, here::here(year, "data", "output", paste0(fishery, "_length_comp.csv")), ",")
-
+    flc
   }
     flc
 
@@ -664,13 +676,14 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
 #' @param area survey area default = "goa"
 #' @param lenbins lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")
 #' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #' @return
-#' @export ts_length_comp
+#' @export bts_length_comp
 #'
 #' @examples
 #'
-ts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, save = TRUE){
+bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
 
   read.csv(here::here(year, "data", "raw", paste0(area, "_ts_length_specimen_data.csv"))) %>%
@@ -742,8 +755,8 @@ ts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, sav
       tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
   }
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
-    write.csv(size_comp, here::here(year, save, "data", paste0(area, "_ts_length_comp.csv")), row.names = F)
+  if(!is.null(alt)) {
+    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_ts_length_comp.csv")), row.names = F)
   } else if(isTRUE(save)){
     write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_ts_length_comp.csv")), row.names = F)
   }
@@ -757,12 +770,13 @@ ts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, sav
 #' @param admb_home = location admb exists on your computer
 #' @param rec_age recruitment age
 #' @param area currently fixed at "goa"
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save in the default location
 #' @return
 #' @export weight_at_age
 #'
 #' @examples weight_at_age(year = 2020, admb_home = "C:/Program Files (x86)/ADMB-12.1", rec_age = 2)
-weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", save = TRUE){
+weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NULL, save = TRUE){
 
   if(is.null(admb_home)){
     R2admb::setup_admb()
@@ -1015,7 +1029,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", save = 
   Wbar = round(Wbar, digits=1)
   Wbar_params = cbind(Winf, k, t0, beta_lw)
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | (!is.null(save))) {
+  if(!is.null(alt)) {
     write.csv(Wbar_params, here::here(year, alt, "data", "Wbar_params.csv"))
     write.csv(Wbar, here::here(year, alt, "data", "waa.csv"))
   } else {
@@ -1032,7 +1046,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", save = 
 #' @param year assessment year
 #' @param species "NORK", "REBS", "SABL"
 #' @param area "goa", "bsai", "everywhere"
-#' @param model folder that the `.tpl` will be in
+#' @param folder folder that the `.tpl` will be in
 #' @param dat_name what to call the .dat file - ".dat" will be appended to the name
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
@@ -1046,15 +1060,15 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", save = 
 #' @param n_lls number of longline surveys e.g., domestic and japanes, default is 1
 #' @export concat_dat
 #'
-#' @examples concat_dat(year = 2020, species = "NORK",  area = "goa", model = "base", dat_name = "goa_nr", rec_age = 2, plus_age = 45)
+#' @examples concat_dat(year = 2020, species = "NORK",  area = "goa", folder = "base", dat_name = "goa_nr", rec_age = 2, plus_age = 45)
 #'
-concat_dat <- function(year, species, area = "goa", model, dat_name, rec_age, plus_age, spawn_mo = 5,
+concat_dat <- function(year, species, area = "goa", folder, dat_name, rec_age, plus_age, spawn_mo = 5,
                        maturity = NULL, alt = NULL, n_ageage = 1, n_sizeage = 1,
                        retro = NULL, n_fleets = 1, n_ts = NULL, n_lls = NULL){
 
   # create directory
-  if (!dir.exists(here::here(year, model))){
-    dir.create(here::here(year, model), recursive=TRUE)
+  if (!dir.exists(here::here(year, folder))){
+    dir.create(here::here(year, folder), recursive=TRUE)
   }
 
   if(is.null(alt)) {
@@ -1500,7 +1514,7 @@ concat_dat <- function(year, species, area = "goa", model, dat_name, rec_age, pl
   }
 
 
-  write.table(dat, file = here::here(year, model, paste0(dat_name, ".dat")) ,
+  write.table(dat, file = here::here(year, folder, paste0(dat_name, ".dat")) ,
               quote=FALSE, row.names=FALSE, col.names=FALSE)
 }
 
