@@ -202,7 +202,7 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
 
 
   rt = vroom::vroom(here::here(year, "data", "user_input", reader_tester))
-
+  area = toupper(area)
 
   if(is.null(admb_home)){
     R2admb::setup_admb()
@@ -214,13 +214,13 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
 
   rt %>%
     tidytable::filter(Species %in% sp_switch(species),
-                  Region == area,
-                  Read_Age > 0,
-                  Test_Age > 0,
-                  Final_Age > 0) %>%
-    tidytable::group_by(Test_Age, Read_Age) %>%
+                      Region == area,
+                      Read_Age > 0,
+                      Test_Age > 0,
+                      Final_Age > 0) %>%
     tidytable::rename_with(tolower) %>%
-    tidytable::summarise(freq = tidytable::n()) -> dat
+    tidytable::summarise(freq = tidytable::n(),
+                         .by = c(test_age, read_age)) -> dat
 
 
   tidytable::left_join(expand.grid(test_age = unique(dat$test_age),
@@ -312,24 +312,20 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
 #' size at age analysis
 #'
 #' @param year analysis year
+#' @param area area data are from e.g., "goa"
 #' @param admb_home location admb exists on your computer
 #' @param rec_age recruitment age
 #' @param max_age max age for age error analysis - default = 100
 #' @param lenbins length bin file
+#' @param alt #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save in the default location
 
 #' @return
 #' @export size_at_age
 #'
 #' @examples
-size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = TRUE){
+size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, alt=NULL, save = TRUE){
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | !(is.null(save))) {
-
-    if(!dir.exists(here::here(year, save, "data"))){
-      dir.create(here::here(year, save, "data"), recursive=TRUE)
-    }
-  }
 
   if(is.null(admb_home)){
     R2admb::setup_admb()
@@ -337,30 +333,24 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
     R2admb::setup_admb(admb_home)
   }
 
-  if(!(isTRUE(save)) | !(isFALSE(save)) | !(is.null(save))) {
-        if (!file.exists(here::here(year, save, "data", "ae_model.csv"))){
-          stop("You must first run the age-error function 'ageage()")
-            } else {
-              nages_m = nrow(read.csv(here::here(year, save, "data", "ae_model.csv")))
-            }
-
-    } else {
-        if (!file.exists(here::here(year, "data", "output", "ae_model.csv"))){
-          stop("You must first run the age-error function 'ageage()")
-        } else {
-          nages_m = nrow(read.csv(here::here(year, "data", "output", "ae_model.csv")))
-      }
-    }
-
-    ages_m = rec_age:(rec_age + nages_m - 1)
-
-  if(is.null(lenbins)){
-    stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
+  if (!file.exists(here::here(year, "data", "output", "ae_model.csv"))){
+    stop("You must first run the age-error function 'ageage()")
   } else {
-    lenbins = read.csv(here::here(year, "data", "user_input", lenbins))$len_bins
+    nages_m = nrow(read.csv(here::here(year, "data", "output", "ae_model.csv")))
   }
 
-  vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_age_data.csv")) %>%
+
+  ages_m = rec_age:(rec_age + nages_m - 1)
+
+  if(is.null(lenbins)){
+    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
+  }
+
+  if(!is.vector(lenbins)){
+    lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
+  }
+
+  vroom::vroom(here::here(year, "data", "raw", "bts_specimen_data.csv")) %>%
     tidytable::rename_with(tolower) %>%
     tidytable::select(year, age, length) %>%
     tidytable::filter(year>=1990, !is.na(age))  %>%
@@ -368,10 +358,9 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
     tidytable::filter(tidytable::n()>1, .by = age) %>%
     tidytable::mutate(n_l = tidytable::n(), .by = length) %>%
     tidytable::arrange(age, length) %>%
-    tidytable::group_by(age) %>%
-    tidytable::mutate(sample_size = tidytable::n()) -> inter
+    tidytable::mutate(sample_size = tidytable::n(), .by = age) -> inter
 
-  vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_length_data.csv")) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0("bts_length_data.csv"))) %>%
     tidytable::rename_with(tolower) %>%
     tidytable::filter(year>=1990, !is.na(length)) -> dat
 
@@ -388,10 +377,13 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
     tidytable::left_join(inter, .) %>%
     tidytable::mutate(prop =  dplyr::n() / n_l * tot, .by = c(age, length)) %>%
     tidytable::distinct() %>%
-    tidytable::summarise(sample_size = mean(sample_size),
-                     Lbar = sum(prop * length) / sum(prop) * 0.1,
-                     SD_Lbar = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - Lbar)^2)),
-                     .by = age) %>%
+    tidytable::mutate(sample_size = mean(sample_size),
+                      Lbar = sum(prop * length) / sum(prop) * 0.1,
+                      .by=age) %>%
+    tidytable::summarise(SD_Lbar = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - Lbar)^2)),
+                         sample_size=mean(sample_size),
+                         Lbar = mean(Lbar),
+                         .by = age) %>%
     tidytable::filter(SD_Lbar>=0.01) -> laa_stats
 
   if(!is.null(alt)){
@@ -452,10 +444,10 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
   (params <- cbind(Linf, k, t0, a, b))
 
   if(!is.null(alt)) {
-      write.csv(params, here::here(year, alt, "data", "lbar_params.csv"), row.names=FALSE)
-    } else {
-      write.csv(params, here::here(year, "data", "output", "lbar_params.csv"), row.names=FALSE)
-    }
+    write.csv(params, here::here(year, alt, "data", "lbar_params.csv"), row.names=FALSE)
+  } else {
+    write.csv(params, here::here(year, "data", "output", "lbar_params.csv"), row.names=FALSE)
+  }
 
 
 
@@ -485,6 +477,7 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
   } else {
     saa
   }
+
 
 }
 
@@ -619,8 +612,10 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, save = TRUE){
 
   if(is.null(lenbins)){
-    stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
-  } else {
+    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
+  }
+
+  if(!is.vector(lenbins)){
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
@@ -690,8 +685,10 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
     dplyr::rename_with(tolower) -> df
 
   if(is.null(lenbins)){
-    stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
-  } else {
+    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
+  }
+
+  if(!is.vector(lenbins)){
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
