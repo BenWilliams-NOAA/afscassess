@@ -134,7 +134,7 @@ bts_biomass <- function(year, area = "goa", type = "total", file = NULL, rmv_yrs
   if(is.null(file)){
 
     vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", type, "_bts_biomass_data.csv"))) %>%
-      dplyr::rename_all(tolower)  -> df
+      dplyr::rename_with(tolower)  -> df
 
     # sablefish are different...
     if("summary_depth" %in% names(df)){
@@ -219,7 +219,7 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
                   Test_Age > 0,
                   Final_Age > 0) %>%
     tidytable::group_by(Test_Age, Read_Age) %>%
-    tidytable::rename_all(tolower) %>%
+    tidytable::rename_with(tolower) %>%
     tidytable::summarise(freq = tidytable::n()) -> dat
 
 
@@ -361,7 +361,7 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
   }
 
   vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_age_data.csv")) %>%
-    tidytable::rename_all(tolower) %>%
+    tidytable::rename_with(tolower) %>%
     tidytable::select(year, age, length) %>%
     tidytable::filter(year>=1990, !is.na(age))  %>%
     tidytable::select(-year) %>%
@@ -372,7 +372,7 @@ size_at_age <- function(year, admb_home = NULL, rec_age, lenbins = NULL, save = 
     tidytable::mutate(sample_size = tidytable::n()) -> inter
 
   vroom::vroom(here::here(year, "data", "raw", "goa_ts_saa_length_data.csv")) %>%
-    tidytable::rename_all(tolower) %>%
+    tidytable::rename_with(tolower) %>%
     tidytable::filter(year>=1990, !is.na(length)) -> dat
 
   if(is.null(dat$frequency)){
@@ -566,7 +566,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 
 
   read.csv(here::here(year, "data", "raw", paste0(area, "_ts_age_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
+    dplyr::rename_with(tolower) %>%
     tidytable::rename.(year = survey_year) %>%
     tidytable::filter.(age >= rec_age) %>%
     tidytable::mutate.(tot = sum(agepop),
@@ -687,7 +687,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
 
 
   read.csv(here::here(year, "data", "raw", paste0(area, "_ts_length_specimen_data.csv"))) %>%
-    dplyr::rename_all(tolower) -> df
+    dplyr::rename_with(tolower) -> df
 
   if(is.null(lenbins)){
     stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
@@ -696,7 +696,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
   }
 
   vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_length_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
+    dplyr::rename_with(tolower) %>%
     dplyr::filter(!is.na(length)) %>%
     dplyr::mutate(length = length / 10) -> dat
 
@@ -716,7 +716,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
 
   if(!is.null(bysex)){
     df %>%
-      dplyr::rename_all(tolower) %>%
+      dplyr::rename_with(tolower) %>%
       dplyr::filter(summary_depth < 995, year != 2001) %>%
       tidyr::pivot_longer(cols = c(males, females, unsexed)) %>%
       dplyr:: mutate(bin = round((length / 10 - 0.5) / 20, 1) * 20 + 1) %>%
@@ -736,7 +736,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
       tidyr::pivot_wider(names_from = bin, values_from = prop) -> size_comp
   } else {
     df %>%
-      dplyr::rename_all(tolower) %>%
+      dplyr::rename_with(tolower) %>%
       dplyr::mutate(length = length / 10,
                     length = ifelse(length >= max(lenbins), max(lenbins), length)) %>%
       dplyr::filter(length %in% lenbins) %>%
@@ -798,7 +798,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
   # data ----
   vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_saa_length_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
+    dplyr::rename_with(tolower) %>%
     dplyr::filter(year >= 1990, !is.na(length)) -> length_data_raw
 
   if(!("frequency" %in% colnames(length_data_raw))){
@@ -810,7 +810,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
 
   vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_saa_age_data.csv"))) %>%
-    dplyr::rename_all(tolower) %>%
+    dplyr::rename_with(tolower) %>%
     dplyr::select(year, age, length, weight) %>%
     dplyr::filter(year >= 1990, !is.na(age))  %>%
     dplyr::select(-year) -> age_data_raw
@@ -1081,7 +1081,7 @@ concat_dat <- function(year, species, area = "goa", folder, dat_name, rec_age, p
 
     if(!is.null(maturity)){
       mature = as.vector(read.csv(paste0(here::here(year, "data", "user_input", maturity))) %>%
-                           dplyr::rename_all(tolower) %>%
+                           dplyr::rename_with(tolower) %>%
                            dplyr::select(-age))
     }
 
@@ -1113,7 +1113,7 @@ concat_dat <- function(year, species, area = "goa", folder, dat_name, rec_age, p
 
     if(!is.null(maturity)){
       mature = as.vector(read.csv(paste0(here::here(year, "data", "user_input", maturity))) %>%
-                           dplyr::rename_all(tolower) %>%
+                           dplyr::rename_with(tolower) %>%
                            dplyr::select(-age))
     }
 
