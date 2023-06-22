@@ -7,7 +7,7 @@
 bts_biomass(
   year,
   area = "goa",
-  by = "total",
+  type = "total",
   file = NULL,
   rmv_yrs = NULL,
   alt = NULL,
@@ -19,7 +19,7 @@ bts_biomass(
 
 \item{area}{options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area}
 
-\item{by}{"depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch}
+\item{type}{"depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch}
 
 \item{file}{if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")}
 
