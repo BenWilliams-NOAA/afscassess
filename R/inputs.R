@@ -499,16 +499,7 @@ size_at_age_pop_60 <- function(year, rec_age, lenbins = NULL){
     ages_m = rec_age:(rec_age + nages_m - 1)
   }
 
-  if(is.null(lenbins)){
-    stop("Please provide the length bin file that is in the user_input folder e.g.,('lengthbins.csv')")
-  } else {
-    lenbins = read.csv(here::here(year, "data", "user_input", lenbins))$len_bins
-  }
-
-  # move parameters to user_input folder
-  write.csv(saa_pop_60, here::here(year, "data", "user_input", "saa_pop_60.csv"))
-
-  pars = read.csv(here::here(year, "data", "user_input", "saa_pop_60.csv"))
+  pars = vroom::vroom(here::here(year, "data", "user_input", "saa_pop_60.csv"), delim = "\t")
 
   expand.grid(age = ages_m,
               length = lenbins) %>%
