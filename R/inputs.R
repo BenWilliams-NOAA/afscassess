@@ -639,9 +639,11 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' fishery length composition analysis
 #'
 #' @param year assessment year
-#' @param fishery default is "fsh1"
+#' @param fishery default is "fsh"
 #' @param lenbins lenbin file if left NULL it looks for here::here(year, "data", "user_input", "len_bin_labels.csv")
 #' @param rec_age recruitment age
+#' @param lenbins length bins for composition data
+#' @param fmv_yrs years to remove from comp data
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #'
@@ -649,7 +651,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @export fish_length_comp
 #'
 #' @examples
-fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, save = TRUE){
+fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, alt = NULL, save = TRUE){
 
   if(is.null(lenbins)){
     stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
