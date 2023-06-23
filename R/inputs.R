@@ -719,7 +719,7 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
 #' @param save
 #'
 #' @return
-#' @export fish_length_comp
+#' @export fish_length_comp_pop
 #'
 #' @examples
 fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, alt = NULL, save = TRUE){
