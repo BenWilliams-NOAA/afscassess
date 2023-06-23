@@ -707,6 +707,106 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
 
 }
 
+#' fishery length composition analysis for pop
+#'
+#' @param year assessment year
+#' @param fishery default is "fsh"
+#' @param lenbins lenbin file if left NULL it looks for here::here(year, "data", "user_input", "len_bin_labels.csv")
+#' @param rec_age recruitment age
+#' @param lenbins length bins for composition data
+#' @param fmv_yrs years to remove from comp data
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param save
+#'
+#' @return
+#' @export fish_length_comp
+#'
+#' @examples
+fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, alt = NULL, save = TRUE){
+
+  if(is.null(lenbins)){
+    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
+  }
+
+  if(!is.vector(lenbins)){
+    lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
+  }
+
+  # get current data
+  yr = year
+  read.csv(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    tidytable::filter(!is.na(age), age>=rec_age) %>%
+    tidytable::group_by(year) %>%
+    tidytable::tally(name = "age") %>%
+    tidytable::filter(age >= 50) %>%
+    tidytable::ungroup() -> ages
+
+  vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.csv"))) %>%
+    tidytable::filter(!(year %in% unique(ages$year)),
+                      length >= 11) %>%
+    tidytable::drop_na(haul_join) %>%
+    tidytable::mutate(tot = sum(frequency),
+                      length = ifelse(length >= max(lenbins), max(lenbins), length),
+                      length = ifelse(length <= min(lenbins), min(lenbins), length),
+                      n_h = length(unique(na.omit(haul_join))) + length(unique(na.omit(port_join))),
+                      .by = year) %>%
+    tidytable::summarise(n_s = mean(tot),
+                         n_h = mean(n_h),
+                         length_tot = sum(frequency),
+                         .by = c(year, length)) %>%
+    tidytable::mutate(prop = length_tot / n_s) %>%
+    tidytable::left_join(expand.grid(year = unique(.$year), length = lenbins), .) %>%
+    tidytable::replace_na(list(prop = 0)) %>%
+    tidytable::mutate(SA_Index = 2,
+                      n_s = mean(n_s, na.rm = T),
+                      n_h = mean(n_h, na.rm = T),
+                      .by = year) %>%
+    tidytable::select(-length_tot) %>%
+    tidytable::pivot_wider(names_from = length, values_from = prop) -> flc
+
+  if(!is.null(rmv_yrs)){
+    flc  %>%
+      tidytable::filter(!(year %in% rmv_yrs)) -> flc
+  }
+
+
+  # get historical data
+  vroom::vroom(here::here(year, "data", "user_input", "goa_pop_fixed_fish_length_comp.csv"), delim = "\t") %>%
+    dplyr::rename_with(tolower) %>%
+    tidytable::mutate(tot = sum(value),
+                      length = ifelse(length >= max(lenbins), max(lenbins), length),
+                      length = ifelse(length <= min(lenbins), min(lenbins), length),
+                      .by = year) %>%
+    tidytable::summarise(n_s = mean(tot),
+                         n_h = mean(tot),
+                         length_tot = sum(value),
+                         .by = c(year, length)) %>%
+    tidytable::mutate(prop = length_tot / n_s) %>%
+    tidytable::left_join(expand.grid(year = unique(.$year), length = lenbins), .)  %>%
+    tidytable::replace_na(list(prop = 0)) %>%
+    tidytable::mutate(SA_Index = 1,
+                      n_s = mean(n_s, na.rm = T),
+                      n_h = mean(n_h, na.rm = T), # for now, set hauls as sample size, don't have haul-level data
+                      .by = year) %>%
+    tidytable::select(-length_tot) %>%
+    tidytable::pivot_wider(names_from = length, values_from = prop) -> flc_hist
+
+  # put 'em together
+  flc_hist %>%
+    tidytable::bind_rows(flc) -> flc
+
+  if(!is.null(alt)) {
+    vroom::vroom_write(flc, here::here(year, alt, "data", paste0(fishery, "_length_comp.csv")), ",")
+    flc
+  } else if(isTRUE(save)){
+    vroom::vroom_write(flc, here::here(year, "data", "output", paste0(fishery, "_length_comp.csv")), ",")
+    flc
+  }
+  flc
+
+
+}
+
 #' trawl survey length composition analysis
 #'
 #' @param year assessment year
