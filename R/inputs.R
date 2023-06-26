@@ -822,8 +822,11 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
 bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_ts_length_specimen_data.csv"))) %>%
-    dplyr::rename_with(tolower) -> df
+  read.csv(here::here(year, "data", "raw", "bts_length_data.csv")) %>%
+    dplyr::rename_with(tolower) %>%
+    tidytable::summarize(n_s = sum(frequency),
+                         n_h = length(unique(hauljoin)),
+                         .by = c(year))-> df
 
   if(is.null(lenbins)){
     stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
@@ -833,26 +836,14 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_length_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_total_bts_sizecomp_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
-    dplyr::filter(!is.na(length)) %>%
-    dplyr::mutate(length = length / 10) -> dat
-
-  if("frequency" %in% colnames(dat)){
-    dat %>%
-      dplyr::group_by(year) %>%
-      dplyr::summarise(n_s = sum(frequency),
-                       n_h = length(unique(hauljoin))) %>%
-      dplyr::ungroup() -> dat
-  } else {
-    dat %>%
-      dplyr::group_by(year) %>%
-      dplyr::summarise(n_s = dplyr::n(),
-                       n_h = length(unique(hauljoin))) %>%
-      dplyr::ungroup() -> dat
-  }
+    dplyr::filter(!is.na(length_mm)) %>%
+    dplyr::mutate(length = length_mm / 10) %>%
+    tidytable::select(-length_mm) -> dat
 
   if(!is.null(bysex)){
+    # note that this code needs to still be changed to have column names consistent with gap_products
     df %>%
       dplyr::rename_with(tolower) %>%
       dplyr::filter(summary_depth < 995, year != 2001) %>%
@@ -873,23 +864,14 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
                     n_h = mean(n_h, na.rm = T)) %>%
       tidyr::pivot_wider(names_from = bin, values_from = prop) -> size_comp
   } else {
-    df %>%
-      dplyr::rename_with(tolower) %>%
-      dplyr::mutate(length = length / 10,
-                    length = ifelse(length >= max(lenbins), max(lenbins), length)) %>%
-      dplyr::filter(length %in% lenbins) %>%
-      dplyr::group_by(year) %>%
-      dplyr::mutate(tot = sum(total)) %>%
-      dplyr::group_by(year, length) %>%
-      dplyr::summarise(prop = sum(total) / mean(tot)) %>%
-      dplyr::ungroup() %>%
-      dplyr::left_join(expand.grid(year = unique(.$year), length = lenbins), .) %>%
+    dat %>%
+      tidytable::mutate(length = ifelse(length >= max(lenbins), max(lenbins), length)) %>%
+      tidytable::filter(length %in% lenbins) %>%
+      tidytable::mutate(tot = sum(population_count), .by = c(year)) %>%
+      tidytable::summarise(prop = sum(population_count) / mean(tot), .by = c(year, length)) %>%
       tidyr::replace_na(list(prop = 0)) %>%
-      dplyr::left_join(dat) %>%
-      dplyr::group_by(year) %>%
-      dplyr::mutate(SA_Index = 1,
-                    n_s = mean(n_s, na.rm = T),
-                    n_h = mean(n_h, na.rm = T)) %>%
+      tidytable::left_join(df) %>%
+      tidytable::mutate(SA_Index = 1) %>%
       tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
   }
 
@@ -898,7 +880,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
   } else if(isTRUE(save)){
     write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_ts_length_comp.csv")), row.names = F)
   }
-    size_comp
+  size_comp
 
 }
 
