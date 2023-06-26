@@ -545,8 +545,11 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
   # compute age comps with marginal ages
   if(exp_meth == 'marg'){
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
-      tidytable::filter(age>=rec_age, !(year %in% rmv_yrs), !is.na(length), !is.na(performance)) %>%
-      tidytable::mutate(age = ifelse(age>plus_age, plus_age, age)) %>%
+      tidytable::filter(age >= rec_age,
+                        !(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::mutate(age = ifelse(age > plus_age, plus_age, age)) %>%
       tidytable::mutate(tot = tidytable::n(), .by = year) %>%
       tidytable::filter(tot>49) %>%
       tidytable::mutate(n_h = length(unique(na.omit(haul_join))) +
@@ -573,7 +576,9 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
 
     # get marginal length comp
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.csv"))) %>%
-      tidytable::filter(!is.na(performance)) %>%
+      tidytable::filter(!(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
       tidytable::mutate(length = ifelse(length >= max(lenbins), max(lenbins), length),
                         .by = year) %>%
       tidytable::summarise(length_tot = sum(frequency),
@@ -610,7 +615,8 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
     # put it all together
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
       tidytable::mutate(tot = tidytable::n(), .by = year) %>%
-      tidytable::filter(tot > 49) %>%
+      tidytable::filter(tot > 49,
+                        !(year %in% rmv_yrs)) %>%
       tidytable::mutate(n_h = length(unique(na.omit(haul_join))) +
                           length(unique(na.omit(port_join))),
                         .by = year) %>%
@@ -621,7 +627,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::left_join.(expand.grid(year = unique(.$year),
                                         age = rec_age:plus_age), .) %>%
       tidytable::left_join(age_comp) %>%
-      tidytable::replace_na.(list(prop = 0)) %>%
+      tidytable::replace_na(list(prop = 0)) %>%
       tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
   }
 

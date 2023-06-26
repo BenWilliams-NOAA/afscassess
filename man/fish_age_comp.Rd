@@ -7,8 +7,10 @@
 fish_age_comp(
   year,
   fishery = "fsh",
+  exp_meth,
   rec_age,
   plus_age,
+  lenbins = NULL,
   rmv_yrs = NULL,
   alt = NULL,
   save = TRUE
@@ -19,9 +21,13 @@ fish_age_comp(
 
 \item{fishery}{default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)}
 
+\item{exp_meth}{expansion method: marg - use marginal ages, marg_len - expand by marginal lengths thru alk}
+
 \item{rec_age}{recruitment age}
 
 \item{plus_age}{plus age group}
+
+\item{lenbins}{length bins in comp data}
 
 \item{rmv_yrs}{any years to remove form the age comp e.g. c(1987, 1989)}
 
