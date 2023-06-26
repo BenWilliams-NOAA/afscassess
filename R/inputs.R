@@ -589,24 +589,23 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
 #' @export bts_age_comp
 #'
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
-bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
+bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, alt = NULL, save = TRUE){
 
-  read.csv(here::here(year, "data", "raw", "bts_age_specimen_data.csv")) %>%
+  read.csv(here::here(year, "data", "raw", "bts_specimen_data.csv")) %>%
     dplyr::filter(!is.na(age)) %>%
     dplyr::group_by(year) %>%
     dplyr::summarise(n_s = dplyr::n(),
                      n_h = length(unique(hauljoin))) -> dat1
 
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_ts_age_data.csv"))) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_total_bts_agecomp_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
-    tidytable::rename.(year = survey_year) %>%
     tidytable::filter.(age >= rec_age) %>%
-    tidytable::mutate.(tot = sum(agepop),
-                      age = ifelse(age < plus_age, age, plus_age),
-                      .by = year) %>%
-    tidytable::summarise.(prop = sum(agepop) / mean(tot),
-                      .by = c(age, year)) %>%
+    tidytable::mutate.(tot = sum(round(population_count, digits = 0)),
+                       age = ifelse(age < plus_age, age, plus_age),
+                       .by = year) %>%
+    tidytable::summarise.(prop = sum(population_count) / mean(tot),
+                          .by = c(age, year)) %>%
     tidytable::left_join.(dat1) %>%
     tidytable::left_join.(expand.grid(year = unique(.$year),
                                       age = rec_age:plus_age), .) %>%
@@ -628,7 +627,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
     vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
     age_comp
   } else if(isTRUE(save)){
-    vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
+    vroom::vroom_write(age_comp, here::here(year, "data", "output", paste0(area, "_bts_age_comp.csv")), ",")
     age_comp
   }
 
