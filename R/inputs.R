@@ -858,9 +858,14 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
     tidytable::select(-length_tot) %>%
     tidytable::pivot_wider(names_from = length, values_from = prop) -> flc_hist
 
+  # get historical input sample size
+  fsc_iss <- vroom::vroom(here::here(year, "data", "user_input", "goa_pop_fsc_iss.csv"), delim = ",")$iss
+
   # put 'em together
   flc_hist %>%
-    tidytable::bind_rows(flc) -> flc
+    tidytable::bind_rows(flc) %>%
+    tidytable::mutate(n_s = fsc_iss,
+                      n_h = fsc_iss) -> flc
 
   if(!is.null(alt)) {
     vroom::vroom_write(flc, here::here(year, alt, "data", paste0(fishery, "_length_comp.csv")), ",")
