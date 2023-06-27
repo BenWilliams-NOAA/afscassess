@@ -1794,8 +1794,8 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
              "#   ~ Does not use most recent years fishery size data",
              "#   ~ Does not use fishery size data in years when ages are expected",
              sep,
-             "#",
-             "#")
+             "",
+             "")
 
   # model inputs ----
 
