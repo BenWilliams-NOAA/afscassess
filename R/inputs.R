@@ -97,6 +97,9 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
     tidytable::mutate(proj_catch = catch * rat$ratio) %>%
     tidytable::bind_cols(rat, yield) -> yld
 
+  # replace current year's catch with projected catch
+  catch$catch[length(catch$catch)] <- yld$proj_catch
+
   if(!(is.null(alt))) {
     vroom::vroom_write(catch, here::here(year, alt, "output",  "fsh_catch.csv"), delim = ",")
     vroom::vroom_write(yld, here::here(year, alt, "output", "yld_rat.csv"), delim = ",")
