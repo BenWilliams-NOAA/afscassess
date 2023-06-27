@@ -2117,5 +2117,30 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
               quote=FALSE, row.names=FALSE, col.names=FALSE)
 }
 
+#' write a .ctl file for goa pop
+#'
+#' @param year assessment year
+#' @param base_mdl_fldr name of folder in which last full assessment model is stored (should be in 'models' folder)
+#' @param mdl_name optional name for model run (default = "Model_1)
+#' @param ctl_name what you want to name your ctl file
+#' @param folder where you want ctl file written
+#' @export write_ctl_pop
+#'
+#' @examples
+#'
+write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", folder){
 
+  ctl_orig = grep("ctl", list.files(here::here(year, 'models', base_mdl_name)), value=TRUE)
+
+  ctl_base = read.delim(here::here(year, 'models', base_mdl_name, ctl_orig), sep = "", header = F)
+
+  ctl_base[1,1] <- mdl_name # to change model name if desired
+  ctl_base[2,1] <- paste0(dat_name, "_", year, ".dat")
+  ctl_base[4,1] <- year
+  ctl_base[length(ctl_base[,1]),1] <- read.csv(here::here(year, "data", "output", "yld_rat.csv"))$yld
+
+  write.table(ctl_base, file = here::here(year, folder, paste0(dat_name, "_", year, ".ctl")) ,
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+}
 
