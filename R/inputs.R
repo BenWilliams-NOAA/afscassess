@@ -488,7 +488,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
 #' @param rmv_yrs any years to remove form the age comp e.g. c(1987, 1989)
-#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_age_comp-use.csv' in the data/output folder
 #' @param save whether to save the file - wll be placed in "year/data/output" folder
 #'
 #' @return
@@ -498,7 +498,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
 #' \dontrun{
 #' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
+fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
 
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                delim = ",",
@@ -525,8 +525,8 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
     tidytable::select(-age_tot) %>%
     tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
 
-  if(!is.null(alt)) {
-    vroom::vroom_write(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")), ",")
+  if(!is.null(id)) {
+    vroom::vroom_write(fac, here::here(year, "data", paste0(fishery, "_age_comp-", id, ".csv")), ",")
     fac
   } else if(isTRUE(save)) {
     vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")), ",")
