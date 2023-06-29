@@ -1,8 +1,8 @@
 #' Process model results for tables and figs
 #'
 #' @param year  assessment year
-#' @param model   model being evaluated (folder name)
-#' @param model_name   name of the model e.g., updated_nr
+#' @param folder   model being evaluated (folder name)
+#' @param model_name   name of the folder e.g., updated_nr
 #' @param dat_name name of dat file e.g., goa_nr_2020
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
@@ -14,9 +14,9 @@
 #' @return
 #' @export process_results
 #'
-#' @examples process_results (year = 2020, model = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc = 1e+07, mcsave = 2000, len_bins = "lbins.csv")
+#' @examples process_results (year = 2020, folder = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc = 1e+07, mcsave = 2000, len_bins = "lbins.csv")
 #'
-process_results <- function(year, model, model_name, dat_name,
+process_results <- function(year, folder, model_name, dat_name,
                             rec_age, plus_age, mcmc, mcsave, len_bins, ...){
 
   # setup
@@ -48,7 +48,7 @@ process_results <- function(year, model, model_name, dat_name,
   REP <- readLines(here::here(year, folder, paste0(model_name, ".rep")))
   CTL <- readLines(here::here(year, folder, paste0(dat_name, ".ctl")))
   PSV <- file(here::here(year, folder, paste0(model_name, ".psv")), "rb")
-  STD <- read.delim(here::here(year, model, paste0(model_name, ".std")), sep="", header = TRUE)
+  STD <- read.delim(here::here(year, folder, paste0(model_name, ".std")), sep="", header = TRUE)
   mceval <- read.delim(here::here(year, folder, "evalout.prj"), sep="", header=FALSE)
 
   # clean rep file
@@ -117,7 +117,7 @@ process_results <- function(year, model, model_name, dat_name,
   obs = as.numeric(obs[[1]][-c(r1, r2, r3)])
 
   data.frame(year = yrs, obs = obs, pred = pred) %>%
-    write.csv(here::here(year, model, "processed", "catch.csv"))
+    write.csv(here::here(year, folder, "processed", "catch.csv"))
 
 
 
