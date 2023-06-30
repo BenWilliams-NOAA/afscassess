@@ -57,7 +57,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
   # Fishery catch data ----
   vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
-  vroom::vroom(here::here(year, "data", "raw", "fsh_obs_specimen_data.txt"),
+  vroom::vroom(here::here(year, "data", "raw", "fsh_obs_data.txt"),
                delim = ",",
                col_type = c(join_key="c", haul_join="c", port_join="c")) -> obs_data
 
