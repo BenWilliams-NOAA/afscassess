@@ -59,7 +59,7 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
   vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
   vroom::vroom(here::here(year, "data", "raw", "fsh_obs_data.txt"),
                delim = ",",
-               col_type = c(join_key="c", haul_join="c", port_join="c")) -> obs_data
+               col_type = c(join_key = "c", haul_join = "c")) -> obs_data
 
   # Estimate catch ratio in final year to end of year
   obs_data %>%
@@ -175,12 +175,8 @@ bts_biomass <- function(year, area = "goa", type = "total", file = NULL, rmv_yrs
     sb
   } else if(isTRUE(save)){
     vroom::vroom_write(sb, here::here(year, "data", "output", paste(area, type, "bts_biomass.csv", sep="_")), delim=",")
-  } else {
     sb
   }
-
-
-
 
 }
 
@@ -551,7 +547,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
   if(exp_meth == 'marg'){
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                  delim = ",",
-                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
+                 col_type = c(join_key = "c", haul_join = "c", port_join = "c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
@@ -584,7 +580,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
     # get marginal length comp
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
                  delim = ",",
-                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
+                 col_type = c(haul_join = "c", port_join = "c")) %>%
       tidytable::filter(!(year %in% rmv_yrs),
                         !is.na(length),
                         !is.na(performance)) %>%
@@ -595,7 +591,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
 
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                  delim = ",",
-                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
+                 col_type = c(join_key = "c", haul_join = "c", port_join = "c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
@@ -608,7 +604,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
     # get age comp expanded by marginal length comp and alk
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                  delim = ",",
-                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
+                 col_type = c(join_key = "c", haul_join = "c", port_join = "c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
