@@ -21,7 +21,7 @@ fish_age_comp(
 
 \item{fishery}{default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)}
 
-\item{exp_meth}{expansion method: marg - use marginal ages, marg_len - expand by marginal lengths thru alk}
+\item{exp_meth}{expansion method: marg - use marginal ages, marg_len - expand by marginal lengths thru alk, exp_len - expand by expanded lengths thru alk}
 
 \item{rec_age}{recruitment age}
 

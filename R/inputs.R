@@ -526,7 +526,7 @@ size_at_age_pop_60 <- function(year, rec_age, lenbins = NULL){
 #'
 #' @param year assessment year
 #' @param fishery default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)
-#' @param exp_meth expansion method: marg - use marginal ages, marg_len - expand by marginal lengths thru alk
+#' @param exp_meth expansion method: marg - use marginal ages, marg_len - expand by marginal lengths thru alk, exp_len - expand by expanded lengths thru alk
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
 #' @param lenbins length bins in comp data
@@ -637,6 +637,116 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::mutate(AA_Index = 1) %>%
       tidytable::left_join.(expand.grid(year = unique(.$year),
                                         age = rec_age:plus_age), .) %>%
+      tidytable::left_join(age_comp) %>%
+      tidytable::replace_na(list(prop = 0)) %>%
+      tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
+  }
+
+  # expand age comps with marginal lengths and alk
+  if(exp_meth == 'marg_len'){
+
+    # get expanded length comp (weighted by observer catch)
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
+                 delim = ",",
+                 col_type = c(haul_join = "c", port_join = "c")) %>%
+      tidytable::filter(!(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::left_join(vroom::vroom(here::here(year, "data", "raw", "fsh_obs_data.txt"),
+                                        delim = ",",
+                                        col_type = c(join_key = "c", haul_join = "c")) %>%
+                             tidytable::select(haul_join, extrapolated_number)) %>%
+      tidytable::select(year, haul_join, length, frequency, extrapolated_number) %>%
+      tidytable::drop_na() %>%
+      tidytable::distinct(year, haul_join, extrapolated_number) %>%
+      tidytable::mutate(p_haul = extrapolated_number / sum(extrapolated_number),
+                        .by = c(year)) -> p_haul # proportion of catch across hauls sampled for length
+
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
+                 delim = ",",
+                 col_type = c(haul_join = "c", port_join = "c")) %>%
+      tidytable::filter(!(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::left_join(p_haul) %>%
+      tidytable::select(year, haul_join, length, frequency, p_haul) %>%
+      tidytable::drop_na() %>%
+      tidytable::mutate(length = ifelse(length >= max(lenbins), max(lenbins), length),
+                        .by = year) %>%
+      tidytable::mutate(p_hlen = frequency / sum(frequency), .by = c (year, haul_join)) %>% # compute haul length comps
+      tidytable::mutate(n_len = sum(frequency), .by = c(year, length)) %>% # compute number of samples by length bin
+      tidytable::mutate(wtd_freq = p_haul * p_hlen * n_len) %>% # compute weighted length frequencies per haul
+      tidytable::summarise(length_tot = sum(wtd_freq), .by = c(year, length)) -> exp_len # expanded length frequencies weighted by haul catch
+
+    exp_len %>%
+      tidytable::distinct(year) -> exp_yrs
+
+    # compute marginal length frequencies in years where observer catch data not available for expansion
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
+                 delim = ",",
+                 col_type = c(haul_join = "c", port_join = "c")) %>%
+      tidytable::filter(!(year %in% rmv_yrs),
+                        !(year %in% exp_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::mutate(length = ifelse(length >= max(lenbins), max(lenbins), length),
+                        .by = year) %>%
+      tidytable::summarise(length_tot = sum(frequency),
+                           .by = c(year, length)) -> mar_len
+
+    # combine marginal and expanded frequencies
+    mar_len %>%
+      tidytable::bind_rows(exp_len) -> comb_len
+
+    # compute length comps
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key = "c", haul_join = "c", port_join = "c")) %>%
+      tidytable::filter(age >= rec_age,
+                        !(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::distinct(year, length) %>%
+      tidytable::left_join(comb_len) %>%
+      tidytable::drop_na() %>%
+      tidytable::mutate(prop_l = length_tot / sum(length_tot), .by = c(year)) -> len_comp
+
+    # get age comp expanded by length comp and alk
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key = "c", haul_join = "c", port_join = "c")) %>%
+      tidytable::filter(age >= rec_age,
+                        !(year %in% rmv_yrs),
+                        !is.na(length),
+                        !is.na(performance)) %>%
+      tidytable::mutate(n_l = tidytable::n(), .by = c(year, age, length)) %>%
+      tidytable::select(year, age, length, n_l) %>%
+      tidytable::arrange(age, length) %>%
+      tidytable::summarise(n_l = mean(n_l), .by = c(year, age, length)) %>%
+      tidytable::mutate(N_l = sum(n_l), .by = c(year, length)) %>%
+      tidytable::mutate(prop_al = n_l / N_l) %>%
+      tidytable::left_join(len_comp) %>%
+      tidytable::drop_na() %>%
+      tidytable::mutate(prop = prop_al * prop_l) %>%
+      tidytable::mutate(age = ifelse(age > plus_age, plus_age, age)) %>%
+      tidytable::summarise(prop = sum(prop), .by = c(year, age)) -> age_comp
+
+    # put it all together
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
+      tidytable::mutate(tot = tidytable::n(), .by = year) %>%
+      tidytable::filter(tot > 49,
+                        !(year %in% rmv_yrs)) %>%
+      tidytable::mutate(n_h = length(unique(na.omit(haul_join))) +
+                          length(unique(na.omit(port_join))),
+                        .by = year) %>%
+      tidytable::summarise(n_s = mean(tot),
+                           n_h = mean(n_h),
+                           .by = c(year)) %>%
+      tidytable::mutate(AA_Index = 1) %>%
+      tidytable::left_join(expand.grid(year = unique(.$year),
+                                       age = rec_age:plus_age), .) %>%
       tidytable::left_join(age_comp) %>%
       tidytable::replace_na(list(prop = 0)) %>%
       tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
