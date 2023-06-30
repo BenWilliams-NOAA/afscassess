@@ -753,7 +753,7 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
   }
 
   if(!is.null(id)) {
-    vroom::vroom_write(fac, here::here(year, "data", paste0(fishery, "_age_comp-", id, ".csv")), ",")
+    vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp-", id, ".csv")), ",")
     fac
   } else if(isTRUE(save)) {
     vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")), ",")
