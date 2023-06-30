@@ -642,8 +642,8 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
   }
 
-  # expand age comps with marginal lengths and alk
-  if(exp_meth == 'marg_len'){
+  # expand age comps with expanded lengths and alk
+  if(exp_meth == 'exp_len'){
 
     # get expanded length comp (weighted by observer catch)
     vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
