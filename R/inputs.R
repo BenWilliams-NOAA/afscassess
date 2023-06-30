@@ -2140,12 +2140,13 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
 #' @param base_mdl_fldr name of folder in which last full assessment model is stored (should be in 'models' folder)
 #' @param mdl_name optional name for model run (default = "Model_1)
 #' @param ctl_name what you want to name your ctl file
+#' @param dat_name name of data file
 #' @param folder where you want ctl file written
 #' @export write_ctl_pop
 #'
 #' @examples
 #'
-write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", folder){
+write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", dat_name = "goa_pop", folder){
 
   ctl_orig = grep("ctl", list.files(here::here(year, 'mgmt', base_mdl_fldr)), value=TRUE)
 

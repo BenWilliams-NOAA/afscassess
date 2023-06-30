@@ -10,7 +10,7 @@ fish_length_comp(
   rec_age,
   lenbins = NULL,
   rmv_yrs = NULL,
-  alt = NULL,
+  id = NULL,
   save = TRUE
 )
 }
@@ -23,7 +23,9 @@ fish_length_comp(
 
 \item{lenbins}{length bins for composition data}
 
-\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+\item{rmv_yrs}{any survey years to exclude}
+
+\item{id}{id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_length_comp-use.csv' in the data/output folder}
 
 \item{save}{}
 

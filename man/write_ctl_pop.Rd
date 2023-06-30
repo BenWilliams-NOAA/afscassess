@@ -9,6 +9,7 @@ write_ctl_pop(
   base_mdl_fldr,
   mdl_name = "Model_1",
   ctl_name = "goa_pop",
+  dat_name = "goa_pop",
   folder
 )
 }
@@ -20,6 +21,8 @@ write_ctl_pop(
 \item{mdl_name}{optional name for model run (default = "Model_1)}
 
 \item{ctl_name}{what you want to name your ctl file}
+
+\item{dat_name}{name of data file}
 
 \item{folder}{where you want ctl file written}
 }
