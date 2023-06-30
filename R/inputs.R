@@ -2147,9 +2147,9 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
 #'
 write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", folder){
 
-  ctl_orig = grep("ctl", list.files(here::here(year, 'models', base_mdl_fldr)), value=TRUE)
+  ctl_orig = grep("ctl", list.files(here::here(year, 'mgmt', base_mdl_fldr)), value=TRUE)
 
-  ctl_base = read.delim(here::here(year, 'models', base_mdl_name, ctl_orig), sep = "", header = F)
+  ctl_base = read.delim(here::here(year, 'mgmt', base_mdl_name, ctl_orig), sep = "", header = F)
 
   ctl_base[1,1] <- mdl_name # to change model name if desired
   ctl_base[2,1] <- paste0(dat_name, "_", year, ".dat")
