@@ -533,7 +533,7 @@ size_at_age_pop_60 <- function(year, rec_age, lenbins = NULL){
 #' @param plus_age plus age group
 #' @param lenbins length bins in comp data
 #' @param rmv_yrs any years to remove form the age comp e.g. c(1987, 1989)
-#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_age_comp-use.csv' in the data/output folder
 #' @param save whether to save the file - wll be placed in "year/data/output" folder
 #'
 #' @return
@@ -543,11 +543,13 @@ size_at_age_pop_60 <- function(year, rec_age, lenbins = NULL){
 #' \dontrun{
 #' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, lenbins = NULL, rmv_yrs = NULL, alt = NULL, save = TRUE){
+fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, lenbins = NULL, rmv_yrs = NULL, id = NULL, save = TRUE){
 
   # compute age comps with marginal ages
   if(exp_meth == 'marg'){
-    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
@@ -578,7 +580,9 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
   if(exp_meth == 'marg_len'){
 
     # get marginal length comp
-    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_length_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
       tidytable::filter(!(year %in% rmv_yrs),
                         !is.na(length),
                         !is.na(performance)) %>%
@@ -587,7 +591,9 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::summarise(length_tot = sum(frequency),
                            .by = c(year, length)) -> mar_len1
 
-    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
@@ -598,7 +604,9 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::mutate(prop_l = length_tot / sum(length_tot), .by = c(year)) -> mar_len
 
     # get age comp expanded by marginal length comp and alk
-    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
       tidytable::filter(age >= rec_age,
                         !(year %in% rmv_yrs),
                         !is.na(length),
@@ -616,7 +624,9 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::summarise(prop = sum(prop), .by = c(year, age)) -> age_comp
 
     # put it all together
-    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+    vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+                 delim = ",",
+                 col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
       tidytable::mutate(tot = tidytable::n(), .by = year) %>%
       tidytable::filter(tot > 49,
                         !(year %in% rmv_yrs)) %>%
@@ -634,8 +644,8 @@ fish_age_comp <- function(year, fishery = "fsh", exp_meth, rec_age, plus_age, le
       tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
   }
 
-  if(!is.null(alt)) {
-    vroom::vroom_write(fac, here::here(year, alt, "data", paste0(fishery, "_age_comp.csv")), ",")
+  if(!is.null(id)) {
+    vroom::vroom_write(fac, here::here(year, "data", paste0(fishery, "_age_comp-", id, ".csv")), ",")
     fac
   } else if(isTRUE(save)) {
     vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")), ",")
@@ -714,14 +724,15 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @param rec_age recruitment age
 #' @param lenbins length bins for composition data
 #' @param fmv_yrs years to remove from comp data
-#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param rmv_yrs any survey years to exclude
+#' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_length_comp-use.csv' in the data/output folder
 #' @param save
 #'
 #' @return
 #' @export fish_length_comp
 #'
 #' @examples
-fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, alt = NULL, save = TRUE){
+fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, id = NULL, save = TRUE){
 
   if(is.null(lenbins)){
     stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
@@ -732,14 +743,18 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
   }
 
   yr = year
-  read.csv(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
+               delim = ",",
+               col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
     tidytable::filter(!is.na(age), age>=rec_age) %>%
     tidytable::group_by(year) %>%
     tidytable::tally(name = "age") %>%
     tidytable::filter(age >= 50) %>%
     tidytable::ungroup() -> ages
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.txt")),
+               delim = ",",
+               col_type = c(haul_join="c", port_join="c")) %>%
     tidytable::filter(!(year %in% unique(ages$year))) %>%
     tidytable::mutate(tot = sum(frequency),
                       length = ifelse(length >= max(lenbins), max(lenbins), length),
@@ -765,14 +780,14 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
   }
 
 
-  if(!is.null(alt)) {
-    vroom::vroom_write(flc, here::here(year, alt, "data", paste0(fishery, "_length_comp.csv")), ",")
+  if(!is.null(id)) {
+    vroom::vroom_write(flc, here::here(year, "data", "output", paste0(fishery, "_length_comp-", id, ".csv")), ",")
     flc
   } else if(isTRUE(save)){
     vroom::vroom_write(flc, here::here(year, "data", "output", paste0(fishery, "_length_comp.csv")), ",")
     flc
   }
-    flc
+  flc
 
 
 }
