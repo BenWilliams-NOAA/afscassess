@@ -158,7 +158,7 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
       tidytable::pivot_longer(-year, "length") %>%
       dplyr::mutate(groups = "obs") %>%
       dplyr::bind_rows(pred %>%
-                         tidyr::pivot_longer(-year, "length") %>%
+                         tidytable::pivot_longer(-year, "length") %>%
                          dplyr::mutate(groups = "pred")) %>%
       dplyr::mutate(length = as.integer(length),
                     Length = factor(length),
