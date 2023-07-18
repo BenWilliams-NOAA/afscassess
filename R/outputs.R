@@ -792,15 +792,21 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 
 #' @param year  assessment year
 #' @param model_dir  full path of model being evaluated
-#' @param rec_age recruitment age
-#' @param plus_age plus age group
 #' @param MCMC = logical, does this run include MCMC evaluations to be processed?
 #' @param no_mcmc = number of mcmc runs
+#' @param rec_age recruitment age
+#' @param plus_age plus age group
 #' @param mcsave the number of mcmcs saved
 #' @param ... future functions
-#' @export process_results_pop
-process_results_pop <- function(year=2023, model_dir,
-                                rec_age=2, plus_age=25, MCMC=FALSE, no_mcmc = 100000, mcsave=100, ...){
+
+process_results_pop <- function(year = 2023,
+                                model_dir = NULL,
+                                rec_age = 2,
+                                plus_age = 25,
+                                size_bins = NULL,
+                                MCMC=FALSE,
+                                no_mcmc = 100000,
+                                mcsave = 100, ...){
 
   # setup
 
