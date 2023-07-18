@@ -109,8 +109,6 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
 
   if(is.null(lenbins)){
     lenbins = read.csv(here::here(year, "data", "user_input", "len_bin_labels.csv"))$len_bins
-  } else {
-    lenbins = read.csv(here::here(year, "data", "user_input", lenbins))$len_bins
   }
 
   obs = stringr::str_split(obs, " ")
@@ -133,10 +131,10 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
     names(pred) <- names(obs) <- c("year", rec_age:plus_age)
 
     obs %>%
-      tidyr::pivot_longer(-year, "age") %>%
+      tidytable::pivot_longer(-year, "age") %>%
       dplyr::mutate(groups = "obs") %>%
       dplyr::bind_rows(pred %>%
-                         tidyr::pivot_longer(-year, "age") %>%
+                         tidytable::pivot_longer(-year, "age") %>%
                          dplyr::mutate(groups = "pred")) %>%
       dplyr::mutate(age = as.integer(age),
                     Age = factor(age),
@@ -157,7 +155,7 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
     names(pred) <- names(obs) <- c("year", lenbins)
 
     obs %>%
-      tidyr::pivot_longer(-year, "length") %>%
+      tidytable::pivot_longer(-year, "length") %>%
       dplyr::mutate(groups = "obs") %>%
       dplyr::bind_rows(pred %>%
                          tidyr::pivot_longer(-year, "length") %>%
@@ -173,7 +171,7 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
     names(obs) <- c("year", rec_age:plus_age)
 
     obs %>%
-      tidyr::pivot_longer(-year, "age") %>%
+      tidytable::pivot_longer(-year, "age") %>%
       dplyr::mutate(groups = "obs") %>%
       dplyr::mutate(age = as.integer(age),
                     Age = factor(age),
@@ -187,7 +185,7 @@ purrit <- function(obs, pred = NULL, rec_age, plus_age, comp = "length", lenbins
     names(obs) <- c("year", lenbins)
 
     obs %>%
-      tidyr::pivot_longer(-year, "length") %>%
+      tidytable::pivot_longer(-year, "length") %>%
       dplyr::mutate(groups = "obs") %>%
       dplyr::mutate(length = as.integer(length),
                     Length = factor(length),
