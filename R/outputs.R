@@ -596,7 +596,7 @@ run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
 #' @export fac_table
-fac_table <- function(year, model){
+fac_table <- function(year, model_dir){
 
   options(scipen = 999)
   fsc = read.csv(here::here(year, "data", "output", "fsh_age_comp.csv"))
@@ -620,7 +620,7 @@ fac_table <- function(year, model){
   names(samps) <- names(comp)
 
   dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(year, model, "tables", "fac.csv"), row.names = FALSE)
+    write.csv(here::here(model_dir, "tables", "fac.csv"), row.names = FALSE)
 
 }
 
