@@ -661,7 +661,7 @@ fsc_table <- function(year, model_dir){
 sac_table <- function(year, model_dir){
 
   options(scipen = 999)
-  fsc = read.csv(here::here(year, "data", "output", "goa_ts_age_comp.csv"))
+  fsc = read.csv(here::here(year, "data", "output", "goa_bts_age_comp.csv"))
 
   fsc %>%
     dplyr::select(n_s, n_h) %>%
