@@ -594,7 +594,7 @@ run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave
 }
 
 #' @param year  assessment year
-#' @param model   model being evaluated (folder name)
+#' @param model_dir   directory of model being evaluated (folder name)
 #' @export fac_table
 fac_table <- function(year, model_dir){
 
@@ -625,9 +625,9 @@ fac_table <- function(year, model_dir){
 }
 
 #' @param year  assessment year
-#' @param model   model being evaluated (folder name)
+#' @param model_dir   directory of model being evaluated (folder name)
 #' @export fsc_table
-fsc_table <- function(year, model){
+fsc_table <- function(year, model_dir){
 
   options(scipen = 999)
   fsc = read.csv(here::here(year, "data", "output", "fsh_length_comp.csv"))
@@ -651,14 +651,14 @@ fsc_table <- function(year, model){
   names(samps) <- names(comp)
 
   dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(year, model, "tables", "fsc.csv"), row.names = FALSE)
+    write.csv(here::here(model_dir, "tables", "fsc.csv"), row.names = FALSE)
 
 }
 
 #' @param year  assessment year
-#' @param model   model being evaluated (folder name)
+#' @param model_dir   directory of model being evaluated (folder name)
 #' @export sac_table
-sac_table <- function(year, model){
+sac_table <- function(year, model_dir){
 
   options(scipen = 999)
   fsc = read.csv(here::here(year, "data", "output", "goa_ts_age_comp.csv"))
@@ -682,14 +682,14 @@ sac_table <- function(year, model){
   names(samps) <- names(comp)
 
   dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(year, model, "tables", "sac.csv"), row.names = FALSE)
+    write.csv(here::here(model_dir, "tables", "sac.csv"), row.names = FALSE)
 
 }
 
 #' @param year  assessment year
-#' @param model   model being evaluated (folder name)
+#' @param model_dir   directory of model being evaluated (folder name)
 #' @export ssc_table
-ssc_table <- function(year, model){
+ssc_table <- function(year, model_dir){
 
   options(scipen = 999)
   fsc = read.csv(here::here(year, "data", "output", "goa_ts_length_comp.csv"))
@@ -713,7 +713,7 @@ ssc_table <- function(year, model){
   names(samps) <- names(comp)
 
   dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(year, model, "tables", "ssc.csv"), row.names = FALSE)
+    write.csv(here::here(model_dir, "tables", "ssc.csv"), row.names = FALSE)
 
 }
 
