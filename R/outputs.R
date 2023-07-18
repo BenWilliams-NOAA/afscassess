@@ -879,43 +879,43 @@ process_results_pop <- function(year = 2023,
   write.csv(likes, paste0(model_dir, "/processed/likelihoods.csv"), row.names = FALSE)
 
 
-  # MCMC parameters ----
-  if(MCMC){
-    mceval <- read.delim(list.files(model_dir, pattern="*evalout.prj", full.names = TRUE), sep="", header = FALSE)
-    PSV <- file(paste0(model_dir,"/",modname,".psv"), "rb")
-
-    npar = readBin(PSV, what = integer(), n=1)
-    mcmcs = readBin(PSV, what = numeric(), n = (npar * no_mcmc / mcsave))
-    close(PSV)
-    mcmc_params = matrix(mcmcs, byrow=TRUE, ncol=npar)
-    # thin the string
-    mcmc_params = mcmc_params[501:nrow(mcmc_params),]
-    colnames(mcmc_params) = STD$name[1:ncol(mcmc_params)]
-    write.csv(mcmc_params,paste0(model_dir, "/processed/mcmc.csv"), row.names = FALSE)
-
-    # mceval phase output ----
-
-    #Curry's Change
-    mceval = mceval[501:nrow(mceval),]
-
-    #Length colnames = 286
-    # columns mcmc_other = 271
-
-    #1-8: Through objective function value
-
-    colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
-                         "ABC", "obj_fun",
-                         paste0("tot_biom_", yrs),
-                         paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
-                         paste0("spawn_biom_", yrs),
-                         "log_mean_rec",
-                         paste0("spawn_biom_proj_", max(yrs) + 1:15),
-                         paste0("pred_catch_proj_", max(yrs) + 1:15),
-                         paste0("rec_proj_", max(yrs) + 1:10),
-                         paste0("tot_biom_proj_", max(yrs)))
-    write.csv(mceval, paste0(model_dir, "/processed/mceval.csv"), row.names = FALSE)
-
-  } ## end if MCMC == T
+  # # MCMC parameters ----
+  # if(MCMC){
+  #   mceval <- read.delim(list.files(model_dir, pattern="*evalout.prj", full.names = TRUE), sep="", header = FALSE)
+  #   PSV <- file(paste0(model_dir,"/",modname,".psv"), "rb")
+  #
+  #   npar = readBin(PSV, what = integer(), n=1)
+  #   mcmcs = readBin(PSV, what = numeric(), n = (npar * no_mcmc / mcsave))
+  #   close(PSV)
+  #   mcmc_params = matrix(mcmcs, byrow=TRUE, ncol=npar)
+  #   # thin the string
+  #   mcmc_params = mcmc_params[501:nrow(mcmc_params),]
+  #   colnames(mcmc_params) = STD$name[1:ncol(mcmc_params)]
+  #   write.csv(mcmc_params,paste0(model_dir, "/processed/mcmc.csv"), row.names = FALSE)
+  #
+  #   # mceval phase output ----
+  #
+  #   #Curry's Change
+  #   mceval = mceval[501:nrow(mceval),]
+  #
+  #   #Length colnames = 286
+  #   # columns mcmc_other = 271
+  #
+  #   #1-8: Through objective function value
+  #
+  #   colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
+  #                        "ABC", "obj_fun",
+  #                        paste0("tot_biom_", yrs),
+  #                        paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
+  #                        paste0("spawn_biom_", yrs),
+  #                        "log_mean_rec",
+  #                        paste0("spawn_biom_proj_", max(yrs) + 1:15),
+  #                        paste0("pred_catch_proj_", max(yrs) + 1:15),
+  #                        paste0("rec_proj_", max(yrs) + 1:10),
+  #                        paste0("tot_biom_proj_", max(yrs)))
+  #   write.csv(mceval, paste0(model_dir, "/processed/mceval.csv"), row.names = FALSE)
+  #
+  # } ## end if MCMC == T
 
   # catch data ----
   pred = base::strsplit(REP[grep("Pred_Catch", REP)], " ")
@@ -972,25 +972,25 @@ process_results_pop <- function(year = 2023,
 
   # biomass & F & recruits ----
   data.frame(year = yrs,
-             tot_biom = afscassess::rep_item("Tot_biom"),
-             sp_biom = afscassess::rep_item("SpBiom"),
-             F = afscassess::rep_item("Fully_selected_F"),
+             tot_biom = rep_item("Tot_biom"),
+             sp_biom = rep_item("SpBiom"),
+             F = rep_item("Fully_selected_F"),
              recruits = pred_rec) -> bio_rec_f
   write.csv(bio_rec_f, paste0(model_dir, "/processed/bio_rec_f.csv"), row.names = FALSE)
 
   # selectivity ----
   data.frame(age = ages,
-             fish1 = afscassess::rep_item("Fishery_Selectivity_1967-1976"),
-             fish2 = afscassess::rep_item("Fishery_Selectivity_1977-1995"),
-             fish3 = afscassess::rep_item("Fishery_Selectivity_1996-2006"),
-             fish4 = afscassess::rep_item(paste0("Fishery_Selectivity_2007-", year)),
-             srv1 = afscassess::rep_item("Trawl_Survey_Selectivity")) -> selex
+             fish1 = rep_item("Fishery_Selectivity_1967-1976"),
+             fish2 = rep_item("Fishery_Selectivity_1977-1995"),
+             fish3 = rep_item("Fishery_Selectivity_1996-2006"),
+             fish4 = rep_item(paste0("Fishery_Selectivity_2007-", year)),
+             srv1 = rep_item("Trawl_Survey_Selectivity")) -> selex
   write.csv(selex, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
 
   # weight-at-age, maturity ----
   data.frame(age = ages,
-             srv1 = afscassess::rep_item("Weight"),
-             maturity = afscassess::rep_item("Maturity")) -> waa_mat
+             srv1 = rep_item("Weight"),
+             maturity = rep_item("Maturity")) -> waa_mat
   write.csv(waa_mat, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
 
   # number of parameters ----
