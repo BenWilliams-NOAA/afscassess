@@ -799,14 +799,8 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param mcsave the number of mcmcs saved
 #' @param ... future functions
 #' @export process_results_pop
-
-process_results_pop <- function(year = 2023,
-                                model_dir,
-                                rec_age = 2,
-                                plus_age = 25,
-                                MCMC = FALSE,
-                                no_mcmc = 100000,
-                                mcsave = 100, ...){
+process_results_pop <- function(year=2023, model_dir,
+                                rec_age=2, plus_age=25, MCMC=FALSE, no_mcmc = 100000, mcsave=100, ...){
 
   # setup
 
@@ -1048,6 +1042,8 @@ process_results_pop <- function(year = 2023,
   # fac is obs and pred fishery age comp
   # fsc is obs and pred fishery size comp
   # sac is obs and pred survey age comp
+
+
 
   proc_res <- list(yrs = yrs,
                    ages = ages,
