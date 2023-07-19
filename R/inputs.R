@@ -2248,15 +2248,17 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
 #'
 #' @param year assessment year
 #' @param base_mdl_fldr name of folder in which last full assessment model is stored (should be in 'models' folder)
+#' @param curr_mdl_fldr name of folder that stores current model
 #' @param mdl_name optional name for model run (default = "Model_1)
 #' @param ctl_name what you want to name your ctl file
 #' @param dat_name name of data file
 #' @param folder where you want ctl file written
+#' @param mcmc toggle to freeze sigr in mcmc estimation
 #' @export write_ctl_pop
 #'
 #' @examples
 #'
-write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", dat_name = "goa_pop", folder){
+write_ctl_pop <- function(year, base_mdl_fldr, curr_mdl_fldr, mdl_name = "Model_1", ctl_name = "goa_pop", dat_name = "goa_pop", folder, mcmc = FALSE){
 
   ctl_orig = grep("ctl", list.files(here::here(year, 'mgmt', base_mdl_fldr)), value=TRUE)
 
@@ -2269,6 +2271,24 @@ write_ctl_pop <- function(year, base_mdl_fldr, mdl_name = "Model_1", ctl_name = 
 
   write.table(ctl_base, file = here::here(year, folder, paste0(dat_name, "_", year, ".ctl")) ,
               quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+  if(mcmc == TRUE){
+    ctl_curr = grep("ctl", list.files(here::here(year, 'mgmt', curr_mdl_fldr)), value=TRUE)
+    std_curr = grep("std", list.files(here::here(year, 'mgmt', curr_mdl_fldr)), value=TRUE)
+
+
+    ctl_base = read.delim(here::here(year, 'mgmt', curr_mdl_fldr, ctl_curr), sep = "", header = F)
+    std_base = read.delim(here::here(year, 'mgmt', curr_mdl_fldr, std_curr), sep = "", header = F)
+
+
+    sigr <- as.numeric(std_base[which(std_base[,2] == "sigr"),3])
+
+    ctl_base[which(ctl_base[,3] == "sigrprior"),1] <- sigr
+    ctl_base[which(ctl_base[,3] == "ph_sigr"),1] <- -1
+
+    write.table(ctl_base, file = here::here(year, folder, "mcmc", paste0(dat_name, "_", year, ".ctl")) ,
+                quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
 
 }
 

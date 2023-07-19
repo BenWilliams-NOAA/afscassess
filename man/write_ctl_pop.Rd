@@ -7,16 +7,20 @@
 write_ctl_pop(
   year,
   base_mdl_fldr,
+  curr_mdl_fldr,
   mdl_name = "Model_1",
   ctl_name = "goa_pop",
   dat_name = "goa_pop",
-  folder
+  folder,
+  mcmc = FALSE
 )
 }
 \arguments{
 \item{year}{assessment year}
 
 \item{base_mdl_fldr}{name of folder in which last full assessment model is stored (should be in 'models' folder)}
+
+\item{curr_mdl_fldr}{name of folder that stores current model}
 
 \item{mdl_name}{optional name for model run (default = "Model_1)}
 
@@ -25,6 +29,8 @@ write_ctl_pop(
 \item{dat_name}{name of data file}
 
 \item{folder}{where you want ctl file written}
+
+\item{mcmc}{toggle to freeze sigr in mcmc estimation}
 }
 \description{
 write a .ctl file for goa pop
