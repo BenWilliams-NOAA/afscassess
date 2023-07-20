@@ -1911,7 +1911,7 @@ concat_dat_pop <- function(year, species, area = "goa", folder, dat_name, rec_ag
   sep = "# -------------------------------------------------------------------"
 
   # header ----
-  header = c(sep,
+  header = c("#- -------------------------------------------------------------------",
              paste0("# ",toupper(area), " Pacific ocean perch .dat file for ADMB optimization"),
              paste ("# New data provided on:", read.table(file = here::here(year, "data/raw/data_called.txt"),
                                                           sep = "\t")[2,1]),
