@@ -7,6 +7,7 @@
 bts_length_comp(
   year,
   area = "goa",
+  sa_index,
   lenbins = NULL,
   bysex = NULL,
   alt = NULL,
@@ -17,6 +18,8 @@ bts_length_comp(
 \item{year}{assessment year}
 
 \item{area}{survey area default = "goa"}
+
+\item{sa_index}{index for size-age transition matrix}
 
 \item{lenbins}{lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")}
 

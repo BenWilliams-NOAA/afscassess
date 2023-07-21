@@ -1013,6 +1013,7 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
 #'
 #' @param year assessment year
 #' @param area survey area default = "goa"
+#' @param sa_index index for size-age transition matrix
 #' @param lenbins lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")
 #' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
@@ -1022,7 +1023,7 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
 #'
 #' @examples
 #'
-bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
+bts_length_comp <- function(year, area = "goa", sa_index, lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
 
   read.csv(here::here(year, "data", "raw", "bts_length_data.csv")) %>%
@@ -1062,7 +1063,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
       dplyr::select(-value) %>%
       dplyr::left_join(dat) %>%
       dplyr::group_by(year) %>%
-      dplyr::mutate(SA_Index = 1,
+      dplyr::mutate(SA_Index = sa_index,
                     n_s = mean(n_s, na.rm = T),
                     n_h = mean(n_h, na.rm = T)) %>%
       tidyr::pivot_wider(names_from = bin, values_from = prop) -> size_comp
@@ -1074,7 +1075,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
       tidytable::summarise(prop = sum(population_count) / mean(tot), .by = c(year, length)) %>%
       tidyr::replace_na(list(prop = 0)) %>%
       tidytable::left_join(df) %>%
-      tidytable::mutate(SA_Index = 1) %>%
+      tidytable::mutate(SA_Index = sa_index) %>%
       tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
   }
 
