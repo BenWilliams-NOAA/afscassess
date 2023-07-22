@@ -486,7 +486,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[19]$st:st_end[19]$end],
                   paste(scan(text = dat[st_end[20]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
                   dat[st_end[20]$st:st_end[20]$end],
-                  dat[(st_end[20]$end + 1):(st_end[20]$end + length(which(scan(text = dat[st_end[17]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[(st_end[20]$end + 1):(st_end[20]$end + length(which(scan(text = dat[st_end[17]$st - 1]) < (endyr - 1))))],
                   dat[st_end[21]$st:st_end[21]$end],
                   # fishery size comp
                   as.character(length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))),
