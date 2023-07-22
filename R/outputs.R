@@ -383,6 +383,206 @@ best_f <- function(data, m, last_ofl, type = 1, f_ratio = NULL, m2 = NULL, last_
 
 }
 
+#' @param year year of assessment
+#' @param model current model folder name
+#' @param model_name name of tpl
+#' @param dat_name name of data file
+#' @param n_retro number of retro runs
+#' @param mcmcon switch to run mcmc
+#' @param mcmc length of mcmc chain
+#' @param mcsave number to save in mcmc
+#' @export run_retro_pop
+
+run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = FALSE, mcmc = 10000000, mcsave=2000) {
+
+  # setup
+  if (!dir.exists(here::here(year, "mgmt", model, "retro", "model"))){
+    dir.create(here::here(year, "mgmt", model, "retro", "model"), recursive=TRUE)
+  }
+
+  if (!dir.exists(here::here(year, "mgmt", model, "retro", "results"))){
+    dir.create(here::here(year, "mgmt", model, "retro", "results"), recursive=TRUE)
+  }
+
+
+  file.copy(here::here(year, "mgmt", model, paste0(model_name, ".exe")),
+            here::here(year, "mgmt", model, "retro", "model"),
+            overwrite = TRUE)
+
+  if(file.exists(here::here(year, "mgmt", model, "mat.dat"))){
+    file.copy(here::here(year, "mgmt", model, "mat.dat"),
+              here::here(year, "mgmt", model, "retro", "model"),
+              overwrite = TRUE)
+  }
+
+
+  ctl <- read.delim(here::here(year, "mgmt", model, paste0(dat_name, "_", year, ".ctl")), sep = "", header=F)
+  dat <- readLines(here::here(year, "mgmt", model, paste0(dat_name, "_", year, ".dat")))
+
+  data.frame(st = grep("#-", dat)) %>%
+    tidytable::mutate(end = grep("#!", dat)) -> st_end
+
+  styr = as.numeric(dat[st_end[2]$st - 3]) # start of model (example 1961 for POP)
+  nages = as.numeric(dat[st_end[2]$st + 3]) # number of age bins
+  nlens = as.numeric(dat[st_end[2]$st + 5]) # number of length bins
+  yrs_retro = seq(year - n_retro + 1, year) # end years for retro run
+
+  # Set up some results files
+  res_sb <- matrix(nrow = length(seq(styr, year)), ncol = n_retro)
+  rownames(res_sb) <- seq(styr, year)
+  colnames(res_sb) <- seq( year - n_retro + 1, year)
+  res_rec <- matrix(nrow = length(seq(styr, year)), ncol = n_retro)
+  rownames(res_rec) <- seq(styr, year)
+  colnames(res_rec) <- seq(year - n_retro + 1, year)
+
+  T_start <- Sys.time() #Timer start
+
+  for(y in 1:n_retro){
+
+    # Set endyr
+    endyr = yrs_retro[y]
+    nyrs = endyr - styr + 1
+    dat_retro = c(dat[st_end[1]$st:st_end[1]$end],
+                  # end year of model
+                  as.character(endyr), # end year
+                  dat[st_end[2]$st:st_end[2]$end],
+                  # fishery catch
+                  paste(scan(text = dat[st_end[3]$st - 1])[1:nyrs],collapse=" "),
+                  dat[st_end[3]$st:st_end[3]$end],
+                  # trawl survey biomass
+                  as.character(length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))),
+                  dat[st_end[4]$st:st_end[4]$end],
+                  paste(scan(text = dat[st_end[5]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
+                  dat[st_end[5]$st:st_end[5]$end],
+                  paste(scan(text = dat[st_end[6]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
+                  dat[st_end[6]$st:st_end[6]$end],
+                  paste(scan(text = dat[st_end[7]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
+                  dat[st_end[7]$st:st_end[7]$end],
+                  paste(scan(text = dat[st_end[8]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
+                  dat[st_end[8]$st:st_end[8]$end],
+                  paste(scan(text = dat[st_end[9]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
+                  dat[st_end[9]$st:st_end[9]$end],
+                  # fishery age comp
+                  as.character(length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))),
+                  dat[st_end[10]$st:st_end[10]$end],
+                  paste(scan(text = dat[st_end[11]$st - 1])[1:length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))],collapse=" "),
+                  dat[st_end[11]$st:st_end[11]$end],
+                  paste(scan(text = dat[st_end[12]$st - 1])[1:length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))],collapse=" "),
+                  dat[st_end[12]$st:st_end[12]$end],
+                  paste(scan(text = dat[st_end[13]$st - 1])[1:length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))],collapse=" "),
+                  dat[st_end[13]$st:st_end[13]$end],
+                  paste(scan(text = dat[st_end[14]$st - 1])[1:length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))],collapse=" "),
+                  dat[st_end[14]$st:st_end[14]$end],
+                  dat[(st_end[14]$end + 1):(st_end[14]$end + length(which(scan(text = dat[st_end[11]$st - 1]) < (endyr - 1))))],
+                  dat[st_end[15]$st:st_end[15]$end],
+                  # trawl survey age comp
+                  as.character(length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))),
+                  dat[st_end[16]$st:st_end[16]$end],
+                  paste(scan(text = dat[st_end[17]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[17]$st:st_end[17]$end],
+                  paste(scan(text = dat[st_end[18]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[18]$st:st_end[18]$end],
+                  paste(scan(text = dat[st_end[19]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[19]$st:st_end[19]$end],
+                  paste(scan(text = dat[st_end[20]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[20]$st:st_end[20]$end],
+                  dat[(st_end[20]$end + 1):(st_end[20]$end + length(which(scan(text = dat[st_end[17]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[st_end[21]$st:st_end[21]$end],
+                  # fishery size comp
+                  as.character(length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))),
+                  dat[st_end[22]$st:st_end[22]$end],
+                  paste(scan(text = dat[st_end[23]$st - 1])[1:length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[23]$st:st_end[23]$end],
+                  paste(scan(text = dat[st_end[24]$st - 1])[1:length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[24]$st:st_end[24]$end],
+                  paste(scan(text = dat[st_end[25]$st - 1])[1:length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[25]$st:st_end[25]$end],
+                  paste(scan(text = dat[st_end[26]$st - 1])[1:length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))],collapse=" "),
+                  dat[st_end[26]$st:st_end[26]$end],
+                  dat[(st_end[26]$end + 1):(st_end[26]$end + length(which(scan(text = dat[st_end[23]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[st_end[27]$st:st_end[27]$end],
+                  # survey size comp
+                  as.character(length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))),
+                  dat[st_end[28]$st:st_end[28]$end],
+                  paste(scan(text = dat[st_end[29]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
+                  dat[st_end[29]$st:st_end[29]$end],
+                  paste(scan(text = dat[st_end[30]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
+                  dat[st_end[30]$st:st_end[30]$end],
+                  paste(scan(text = dat[st_end[31]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
+                  dat[st_end[31]$st:st_end[31]$end],
+                  paste(scan(text = dat[st_end[32]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
+                  dat[st_end[32]$st:st_end[32]$end],
+                  dat[(st_end[32]$end + 1):(st_end[32]$end + length(which(scan(text = dat[st_end[29]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[st_end[33]$st:st_end[33]$end])
+
+    # Write data and control file
+    write.table(dat_retro,
+                file = here::here(year, 'mgmt', model, 'retro', 'model', paste0(dat_name, "_", endyr,".dat")),
+                quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+    ctl[2,1] = paste0(dat_name, "_", endyr, ".dat")
+    ctl[4,1] = as.character(endyr)
+    write.table(ctl, file = here::here(year, 'mgmt', model, 'retro', 'model', paste0(dat_name, "_", year, ".ctl")),
+                quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+    # run model
+    setwd(here::here(year, 'mgmt', model, 'retro', 'model'))
+    R2admb::run_admb(mdl_name, verbose = TRUE)
+
+
+    # copy and store results
+    file.copy(from = here::here(year, 'mgmt', model, "retro", "model", paste0(model_name, ".std")),
+              to = here::here(year, 'mgmt', model, "retro", "results", paste0("std_", endyr,".std")),
+              overwrite = TRUE)
+
+    # compile ssb/recruitment results
+    std = read.delim(here::here(year, 'mgmt', model, "retro", "model", paste0(model_name, ".std")),
+                     header = T, sep = "")
+    res_sb[1:nyrs, y] = std$value[which(std$name=="spawn_biom")]
+    res_rec[1:nyrs, y] = std$value[which(std$name=="pred_rec")]
+
+
+    # run mcmc
+    if(mcmcon == TRUE) {
+
+      # freeze sigr
+      ctl = read.delim(here::here(year, 'mgmt', model, grep("ctl", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
+      std = read.delim(here::here(year, 'mgmt', model, grep("std", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
+
+      sigr = as.numeric(std_base[which(std[,2] == "sigr"),3])
+
+      ctl[which(ctl[,3] == "sigrprior"),1] = sigr
+      ctl[which(ctl[,3] == "ph_sigr"),1] = -1
+
+      write.table(ctl, file = here::here(year, 'mgmt', model, 'retro', 'model', paste0(dat_name, "_", year, ".ctl")),
+                  quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+      # run mcmc
+      R2admb::run_admb(model_name, verbose = TRUE, mcmc = TRUE,
+                       mcmc.opts = R2admb::mcmc.control(mcmc = mcmc,
+                                                        mcsave = mcsave,
+                                                        mcmcpars = 'log_mean_rec'))
+      system(paste0(model_name,'.exe',' -mceval'))
+
+      # copy and store mcmc results
+      file.copy(from = here::here(year, 'mgmt', model, "retro", "model", "evalout.prj"),
+                to = here::here(year, 'mgmt', model, "retro", "results", paste0("mcmc_", endyr,".prj")),
+                overwrite = TRUE)
+
+    }
+
+  }
+
+  write.csv(res_sb, here::here(year, 'mgmt', model, 'processed', 'retro_ssb.csv'))
+  write.csv(res_rec, here::here(year, 'mgmt', model, 'processed', 'retro_rec.csv'))
+
+}
+
+
+
+
+
+
 run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave=2000) {
 
   # setup
