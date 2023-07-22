@@ -549,7 +549,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
       ctl = read.delim(here::here(year, 'mgmt', model, grep("ctl", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
       std = read.delim(here::here(year, 'mgmt', model, grep("std", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
 
-      sigr = as.numeric(std_base[which(std[,2] == "sigr"),3])
+      sigr = as.numeric(std[which(std[,2] == "sigr"),3])
 
       ctl[which(ctl[,3] == "sigrprior"),1] = sigr
       ctl[which(ctl[,3] == "ph_sigr"),1] = -1
