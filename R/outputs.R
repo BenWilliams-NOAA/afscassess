@@ -462,7 +462,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[8]$st:st_end[8]$end],
                   paste(scan(text = dat[st_end[9]$st - 1])[1:length(which(scan(text = dat[st_end[5]$st-1]) <= endyr))],collapse=" "),
                   dat[st_end[9]$st:st_end[9]$end],
-                  # fishery age comp
+                  # fishery age comp (note: will never have ages in the final year of model)
                   as.character(length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))),
                   dat[st_end[10]$st:st_end[10]$end],
                   paste(scan(text = dat[st_end[11]$st - 1])[1:length(which(scan(text = dat[st_end[11]$st-1]) < (endyr - 1)))],collapse=" "),
@@ -475,7 +475,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[14]$st:st_end[14]$end],
                   dat[(st_end[14]$end + 1):(st_end[14]$end + length(which(scan(text = dat[st_end[11]$st - 1]) < (endyr - 1))))],
                   dat[st_end[15]$st:st_end[15]$end],
-                  # trawl survey age comp
+                  # trawl survey age comp (note: will never have ages in the final year of model)
                   as.character(length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))),
                   dat[st_end[16]$st:st_end[16]$end],
                   paste(scan(text = dat[st_end[17]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
@@ -486,7 +486,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[19]$st:st_end[19]$end],
                   paste(scan(text = dat[st_end[20]$st - 1])[1:length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1)))],collapse=" "),
                   dat[st_end[20]$st:st_end[20]$end],
-                  dat[(st_end[20]$end + 1):(st_end[20]$end + length(which(scan(text = dat[st_end[17]$st - 1]) < (endyr - 1))))],
+                  dat[(st_end[20]$end + 1):(st_end[20]$end + length(which(scan(text = dat[st_end[17]$st - 1]) <= (endyr - 1))))],
                   dat[st_end[21]$st:st_end[21]$end],
                   # fishery size comp
                   as.character(length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))),
@@ -499,9 +499,9 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[25]$st:st_end[25]$end],
                   paste(scan(text = dat[st_end[26]$st - 1])[1:length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1)))],collapse=" "),
                   dat[st_end[26]$st:st_end[26]$end],
-                  dat[(st_end[26]$end + 1):(st_end[26]$end + length(which(scan(text = dat[st_end[23]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[(st_end[26]$end + 1):(st_end[26]$end + length(which(scan(text = dat[st_end[23]$st - 1]) <= (endyr - 1))))],
                   dat[st_end[27]$st:st_end[27]$end],
-                  # survey size comp
+                  # survey size comp (will have size comps in final year of model)
                   as.character(length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))),
                   dat[st_end[28]$st:st_end[28]$end],
                   paste(scan(text = dat[st_end[29]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
@@ -512,7 +512,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                   dat[st_end[31]$st:st_end[31]$end],
                   paste(scan(text = dat[st_end[32]$st - 1])[1:length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr))],collapse=" "),
                   dat[st_end[32]$st:st_end[32]$end],
-                  dat[(st_end[32]$end + 1):(st_end[32]$end + length(which(scan(text = dat[st_end[29]$st - 1]) < (endyr - 1))) + 1)],
+                  dat[(st_end[32]$end + 1):(st_end[32]$end + length(which(scan(text = dat[st_end[29]$st - 1]) <= endyr)))],
                   dat[st_end[33]$st:st_end[33]$end])
 
     # Write data and control file
