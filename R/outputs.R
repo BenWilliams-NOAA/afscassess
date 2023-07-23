@@ -1199,6 +1199,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param on_year logical, is the assessment an 'on' or 'off' year
 #' @param retro logical, does this run include retrospective results?
 #' @param ... future functions
+#' @export process_results_pop
 
 process_results_pop <- function(year = 2023,
                                 model_dir = NULL,
