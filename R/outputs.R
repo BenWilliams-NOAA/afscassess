@@ -1477,9 +1477,9 @@ process_results_pop <- function(year = 2023,
                    sac = sac)
 
   if(mcmc == TRUE){
-    proc_res <- list(proc_res,
-                     mcmc_params = mcmc_params,
-                     mceval = mceval)
+    proc_res <- c(proc_res,
+                  list(mcmc_params = mcmc_params,
+                       mceval = mceval))
   }
 
   proc_res
