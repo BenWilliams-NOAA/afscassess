@@ -576,12 +576,13 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
   write.csv(res_sb, here::here(year, 'mgmt', model, 'processed', 'retro_ssb.csv'))
   write.csv(res_rec, here::here(year, 'mgmt', model, 'processed', 'retro_rec.csv'))
 
+  T_end<-Sys.time()
+
+  T_end-T_start
+
 }
 
-
-
-
-
+# old function
 
 run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave=2000) {
 
@@ -790,6 +791,202 @@ run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave
   T_end<-Sys.time()
 
   T_end-T_start
+
+}
+
+#' @param st_year start year for projections
+#' @param spec region and species description (i.e., 'goa_pop')
+#' @param model name of current model that is to be projected
+#' @param on_year toggle whether assessment is in an 'on' or 'off' year
+#' @export run_proj
+
+run_proj <- function(st_year, spec, model, on_year = TRUE){
+
+
+  # setup folders
+  if (!dir.exists(here::here(st_year, "mgmt", model, "proj"))){
+    dir.create(here::here(st_year, "mgmt", model, "proj"), recursive=TRUE)
+  }
+
+  if (!dir.exists(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out")))){
+    dir.create(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out")), recursive=TRUE)
+  }
+
+  if (!dir.exists(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out")))){
+    dir.create(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out")), recursive=TRUE)
+  }
+
+  if (!dir.exists(here::here(st_year, "mgmt", model, "proj", "model"))){
+    dir.create(here::here(st_year, "mgmt", model, "proj", "model"), recursive=TRUE)
+  }
+
+  if (!dir.exists(here::here(st_year, "mgmt", model, "proj", "model", "data"))){
+    dir.create(here::here(st_year, "mgmt", model, "proj", "model", "data"), recursive=TRUE)
+  }
+
+  # read in parameters for projection
+  prj_par <- vroom::vroom(here::here(st_year, "data", "output", "yld_rat.csv"))
+
+  # determine end date for catch expansion in current year
+  vroom::vroom(here::here(st_year, "data", "raw", "fsh_catch_data.csv")) %>%
+    tidytable::select(week_end_date) %>%
+    tidytable::summarise(max(week_end_date)) -> catch_date
+
+  # for off-year assessment, get final previous year catch
+  vroom::vroom(here::here(st_year, "data", "raw", "fsh_catch_data.csv")) %>%
+    tidytable::select(year, weight_posted) %>%
+    tidytable::filter(year == st_year - 1) %>%
+    tidytable::summarise(sum(weight_posted)) -> prev_c
+
+  # copy proj.dat to projection model data folder
+  file.copy(here::here(st_year, "mgmt", model, "proj.dat"),
+            here::here(st_year, "mgmt", model, "proj", "model", "data", paste0(spec, ".dat")),
+            overwrite = TRUE)
+
+  # change projection begin year in setup.dat file
+  setup <- readLines(here::here(st_year, "mgmt", model, "proj", "model", "setup.dat"))
+  setup[grep("#_Begin Year",setup)] = paste(st_year, "#_Begin Year")
+  write.table(setup, file = here::here(st_year, "mgmt", model, "proj", "model", "setup.dat"),
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+  # run max f projection scenario
+
+  # get together data file
+  spp_catch <- c("#_Number_of_years with specified catch",
+                 if(on_year == TRUE){1}else{2},
+                 "# Number of species",
+                 1,
+                 "# data files for each species",
+                 paste0("data/", spec, ".dat"),
+                 "# ABC Multipliers",
+                 1,
+                 "# Population scalars",
+                 1000,
+                 "# Number of TAC model categories",
+                 1,
+                 "# TAC model indices (for aggregating)",
+                 1,
+                 "# Catch in each future year",
+                 if(on_year == TRUE){
+                   paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4))}
+                 else{
+                   c(paste0(paste(st_year - 1, round(prev_c$V1), sep = "\t"), " # Finalized previous year catch"),
+                     paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)))})
+
+  write.table(spp_catch, file = here::here(st_year, "mgmt", model, "proj", "model", "spp_catch.dat"),
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+  write.table(spp_catch, file = here::here(st_year, "mgmt", model, "proj", "model", "data", paste0(spec, "_max_spcat.dat")),
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+  # run projection model
+  setwd(here::here(st_year, "mgmt", model, "proj", "model"))
+
+  R2admb::run_admb("main", verbose = TRUE) # you get a warning message here but you can ignore it
+
+  # copy pertinent results
+  file.copy(c(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "means.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "percentdb.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "percentiles.out")),
+            c(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "bigfile.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "means.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "percentdb.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "percentiles.out")),
+            overwrite = TRUE)
+
+  # make summary file
+  read.delim(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
+             sep = "", header = TRUE) %>%
+    dplyr::rename_all(., .funs = tolower) %>%
+    tidytable::summarise(abc = mean(abc),
+                         ofl = mean(ofl),
+                         catch = mean(catch),
+                         ssb = mean(ssb),
+                         f = mean(f),
+                         tot_biom = mean(tot_biom),
+                         .by = c(alternative, spp, yr)) %>%
+    tidytable::rename(alt = 'alternative',
+                      stock = 'spp',
+                      year = 'yr') %>%
+    write.table(., file = here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "bigsum.dat"),
+                quote = FALSE, row.names = FALSE)
+
+  # run author's f scenario
+
+  # get catch for next three years under max f scenario
+  percentiles <- readLines(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "percentiles.out"), warn = FALSE)
+
+  c_plus1 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][4],split=" ")[[1]][8])
+  c_plus2 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][5],split=" ")[[1]][8])
+  c_plus3 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][6],split=" ")[[1]][8])
+
+
+  # get together data file with future catch set at yield ratio * max catch
+
+
+  spp_catch <- c("#_Number_of_years with specified catch",
+                 if(on_year == TRUE){3}else{4},
+                 "# Number of species",
+                 1,
+                 "# data files for each species",
+                 paste0("data/", spec, ".dat"),
+                 "# ABC Multipliers",
+                 1,
+                 "# Population scalars",
+                 1000,
+                 "# Number of TAC model categories",
+                 1,
+                 "# TAC model indices (for aggregating)",
+                 1,
+                 "# Catch in each future year",
+                 if(on_year == TRUE){
+                   c(paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)),
+                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))}
+                 else{
+                   c(paste0(paste(st_year - 1, round(prev_c$V1), sep = "\t"), " # Finalized previous year catch"),
+                     paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)),
+                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 3, round(c_plus3 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))})
+
+  write.table(spp_catch, file = here::here(st_year, "mgmt", model, "proj", "model", "spp_catch.dat"),
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+  write.table(spp_catch, file = here::here(st_year, "mgmt", model, "proj", "model", "data", paste0(spec, "_spcat.dat")),
+              quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+  # run projection model
+  setwd(here::here(st_year, "mgmt", model, "proj", "model"))
+
+  R2admb::run_admb("main", verbose = TRUE) # you get a warning message here but you can ignore it
+
+  # copy pertinent results
+  file.copy(c(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "means.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "percentdb.out"),
+              here::here(st_year, "mgmt", model, "proj", "model", "percentiles.out")),
+            c(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out"), "bigfile.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out"), "means.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out"), "percentdb.out"),
+              here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out"), "percentiles.out")),
+            overwrite = TRUE)
+
+  # make summary file
+  read.delim(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
+             sep = "", header = TRUE) %>%
+    dplyr::rename_all(., .funs = tolower) %>%
+    tidytable::summarise(abc = mean(abc),
+                         ofl = mean(ofl),
+                         catch = mean(catch),
+                         ssb = mean(ssb),
+                         f = mean(f),
+                         tot_biom = mean(tot_biom),
+                         .by = c(alternative, spp, yr)) %>%
+    tidytable::rename(alt = 'alternative',
+                      stock = 'spp',
+                      year = 'yr') %>%
+    write.table(., file = here::here(st_year, "mgmt", model, "proj", paste0(spec, "_out"), "bigsum.dat"),
+                quote = FALSE, row.names = FALSE)
 
 }
 
