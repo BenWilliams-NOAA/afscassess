@@ -1399,9 +1399,6 @@ process_results_pop <- function(year = 2023,
   afscassess::sac_table(year, model_dir)
   afscassess::ssc_table(year, model_dir)
 
-
-
-
   # mcmc results
   if(mcmc == TRUE){
 
@@ -1421,8 +1418,8 @@ process_results_pop <- function(year = 2023,
                         srv_yr != "Year:") %>%
       tidytable::mutate(srv_yr = as.numeric(srv_yr))
 
-    # thin the string
-    mcmc_params = mcmc_params[501:nrow(mcmc_params),]
+    # thin the string by taking out first 10% of chain
+    mcmc_params = mcmc_params[(0.1 * mcmcruns / mcmcsave + 1):nrow(mcmc_params),]
     colnames(mcmc_params) = std$name[1:ncol(mcmc_params)]
     write.csv(mcmc_params,paste0(model_dir, "/processed/mcmc.csv"), row.names = FALSE)
 
@@ -1440,8 +1437,8 @@ process_results_pop <- function(year = 2023,
                          paste0("tot_biom_proj_", max(yrs) +1:2),
                          paste0("srv1_biom_",yrs_srv1_biom$srv_yr))
 
-    #Curry's Change
-    mceval = mceval[501:nrow(mceval),]
+    #Curry's Change, changed again to take out first 10% of chain
+    mceval = mceval[(0.1 * mcmcruns / mcmcsave + 1):nrow(mceval),]
     write.csv(mceval, paste0(model_dir, "/processed/mceval.csv"), row.names = FALSE)
 
   }
@@ -1463,8 +1460,6 @@ process_results_pop <- function(year = 2023,
   # sac is obs and pred survey age comp
   # mcmc_params is the mcmc chain for values in std file
   # mceval is the mcmc chain for quants listed in evalout.prj file
-
-
 
   proc_res <- list(yrs = yrs,
                    ages = ages,
