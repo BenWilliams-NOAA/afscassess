@@ -1189,21 +1189,29 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 
 #' @param year  assessment year
 #' @param model_dir  full path of model being evaluated
-#' @param MCMC = logical, does this run include MCMC evaluations to be processed?
-#' @param no_mcmc = number of mcmc runs
+#' @param modname name of model
+#' @param mcmc logical, does this run include MCMC evaluations to be processed?
+#' @param no_mcmc number of mcmc runs
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
 #' @param mcsave the number of mcmcs saved
+#' @param proj logical, does this run inclue projection model results?
+#' @param on_year logical, is the assessment an 'on' or 'off' year
+#' @param retro logical, does this run include retrospective results?
 #' @param ... future functions
 
 process_results_pop <- function(year = 2023,
                                 model_dir = NULL,
+                                modname,
                                 rec_age = 2,
                                 plus_age = 25,
                                 size_bins = NULL,
-                                MCMC=FALSE,
+                                mcmc = FALSE,
                                 no_mcmc = 100000,
-                                mcsave = 100, ...){
+                                mcsave = 100,
+                                proj = FALSE,
+                                on_year = TRUE,
+                                retro = FALSE, ...){
 
   # setup
 
@@ -1221,7 +1229,7 @@ process_results_pop <- function(year = 2023,
 
   # helper functions
   rep_item <- function(name){
-    t <- strsplit(REP[grep(name, REP)]," ")
+    t <- strsplit(rep[grep(name, rep)]," ")
     t <- subset(t[[1]], t[[1]]!="")
     if(t[[1]][1] == "TWL"){
       as.numeric(t[3:length(t)])
@@ -1233,20 +1241,20 @@ process_results_pop <- function(year = 2023,
 
   # read in report and ctl files
   dats <- list.files(model_dir, full.names = TRUE)
-  DAT <- readLines(dats[grepl("*.dat",dats) & !grepl('proj',dats)])
-  REP <- readLines(list.files(model_dir, pattern="*.rep", full.names = TRUE))
+  dat <- readLines(dats[grepl("*.dat",dats) & !grepl('proj',dats)])
+  rep <- readLines(list.files(model_dir, pattern="*.rep", full.names = TRUE))
   modname <- gsub(".rep","",basename(list.files(model_dir, pattern="*.rep", full.names = TRUE))) ## strip model name from rep file
-  CTL <- readLines(list.files(model_dir, pattern="*.ctl", full.names = TRUE))
-  STD <- read.delim(list.files(model_dir, pattern="*.std", full.names = TRUE), sep="", header = TRUE)
+  ctl <- readLines(list.files(model_dir, pattern="*.ctl", full.names = TRUE))
+  std <- read.delim(list.files(model_dir, pattern="*.std", full.names = TRUE), sep="", header = TRUE)
 
 
   # clean rep file
-  suppressWarnings(data.frame(year = unlist(base::strsplit(REP[grep("Year", REP)[1]]," "))) %>%
+  suppressWarnings(data.frame(year = unlist(base::strsplit(rep[grep("Year", rep)[1]]," "))) %>%
                      tidytable::mutate.(year = as.numeric(year)) %>%
                      tidytable::drop_na.() %>%
                      tidytable::pull.(year)) -> yrs
 
-  suppressWarnings(data.frame(age = unlist(base::strsplit(REP[grep("Age", REP)[1]]," "))) %>%
+  suppressWarnings(data.frame(age = unlist(base::strsplit(rep[grep("Age", rep)[1]]," "))) %>%
                      tidytable::mutate.(age = as.numeric(age)) %>%
                      tidytable::drop_na.() %>%
                      tidytable::pull.(age)) -> ages
@@ -1258,10 +1266,10 @@ process_results_pop <- function(year = 2023,
                                         styr_rec = replace(styr_rec, duplicated(styr_rec), NA))) %>%
     write.csv(paste0(model_dir, "/processed/ages_yrs.csv"), row.names = FALSE)
 
-  ## pull out likelihoods ----
+  ## pull out likelihoods
   ## this function extracts & binds them rowwise
   do.call(rbind,
-          lapply(unlist(base::strsplit(REP[grep('Likelihood|Priors|Penalty|Objective', REP)][2:19],"\n")),
+          lapply(unlist(base::strsplit(rep[grep('Likelihood|Priors|Penalty|Objective', rep)][2:19],"\n")),
                  FUN = function(x){
                    tmpl <- unlist(strsplit(x," "))
                    tempr <- matrix(c(tmpl[1], tmpl[2], paste0(tmpl[3:length(tmpl)], collapse = ' ')), ncol = 3)
@@ -1275,53 +1283,14 @@ process_results_pop <- function(year = 2023,
                       weight = ifelse(is.na(weight) == TRUE, 1, weight)) -> likes
   write.csv(likes, paste0(model_dir, "/processed/likelihoods.csv"), row.names = FALSE)
 
-
-  # # MCMC parameters ----
-  # if(MCMC){
-  #   mceval <- read.delim(list.files(model_dir, pattern="*evalout.prj", full.names = TRUE), sep="", header = FALSE)
-  #   PSV <- file(paste0(model_dir,"/",modname,".psv"), "rb")
-  #
-  #   npar = readBin(PSV, what = integer(), n=1)
-  #   mcmcs = readBin(PSV, what = numeric(), n = (npar * no_mcmc / mcsave))
-  #   close(PSV)
-  #   mcmc_params = matrix(mcmcs, byrow=TRUE, ncol=npar)
-  #   # thin the string
-  #   mcmc_params = mcmc_params[501:nrow(mcmc_params),]
-  #   colnames(mcmc_params) = STD$name[1:ncol(mcmc_params)]
-  #   write.csv(mcmc_params,paste0(model_dir, "/processed/mcmc.csv"), row.names = FALSE)
-  #
-  #   # mceval phase output ----
-  #
-  #   #Curry's Change
-  #   mceval = mceval[501:nrow(mceval),]
-  #
-  #   #Length colnames = 286
-  #   # columns mcmc_other = 271
-  #
-  #   #1-8: Through objective function value
-  #
-  #   colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
-  #                        "ABC", "obj_fun",
-  #                        paste0("tot_biom_", yrs),
-  #                        paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
-  #                        paste0("spawn_biom_", yrs),
-  #                        "log_mean_rec",
-  #                        paste0("spawn_biom_proj_", max(yrs) + 1:15),
-  #                        paste0("pred_catch_proj_", max(yrs) + 1:15),
-  #                        paste0("rec_proj_", max(yrs) + 1:10),
-  #                        paste0("tot_biom_proj_", max(yrs)))
-  #   write.csv(mceval, paste0(model_dir, "/processed/mceval.csv"), row.names = FALSE)
-  #
-  # } ## end if MCMC == T
-
-  # catch data ----
-  pred = base::strsplit(REP[grep("Pred_Catch", REP)], " ")
+  # catch data
+  pred = base::strsplit(rep[grep("Pred_Catch", rep)], " ")
   r1 = which(pred[[1]] == "Pred_Catch")
   r2 = which(pred[[1]] == "Pred_catch_later")
   r3 = which(pred[[1]] == "")
   pred = as.numeric(pred[[1]][-c(r1, r2, r3)])
 
-  obs = base::strsplit(REP[grep("Obs_Catch", REP)], " ")
+  obs = base::strsplit(rep[grep("Obs_Catch", rep)], " ")
   r1 = which(obs[[1]] == "Obs_Catch")
   r2 = which(obs[[1]] == "Obs_Catch_Later")
   r3 = which(obs[[1]] == "")
@@ -1330,27 +1299,26 @@ process_results_pop <- function(year = 2023,
   data.frame(year = yrs, obs = obs, pred = pred) -> catch
   write.csv(catch, paste0(model_dir, "/processed/catch.csv"), row.names = FALSE)
 
-  # survey data ----
-  syr = REP[grep("Survey Biomass",REP)[1]:(grep("Survey Biomass",REP)[2]-2)][2]
+  # survey data
+  syr = rep[grep("Survey Biomass",rep)[1]:(grep("Survey Biomass",rep)[2]-2)][2]
   syr = base::strsplit(syr," ")
   syr = subset(syr[[1]], syr[[1]]!="")
   syr = as.numeric(syr[2:length(syr)])
 
-  obs = REP[grep("Survey Biomass",REP)[1]:(grep("Survey Biomass",REP)[2]-2)][4]
+  obs = rep[grep("Survey Biomass",rep)[1]:(grep("Survey Biomass",rep)[2]-2)][4]
   obs = base::strsplit(obs," ")
   obs = subset(obs[[1]], obs[[1]]!="")
   obs = as.numeric(obs[2:length(obs)])
 
-  se = REP[grep("Survey Biomass",REP)[1]:(grep("Survey Biomass",REP)[2]-2)][5]
+  se = rep[grep("Survey Biomass",rep)[1]:(grep("Survey Biomass",rep)[2]-2)][5]
   se = base::strsplit(se," ")
   se = subset(se[[1]], se[[1]]!="")
   se = as.numeric(se[2:length(se)])
 
-  pred = REP[grep("Survey Biomass",REP)[1]:(grep("Survey Biomass",REP)[2]-2)][3]
+  pred = rep[grep("Survey Biomass",rep)[1]:(grep("Survey Biomass",rep)[2]-2)][3]
   pred = base::strsplit(pred," ")
   pred = subset(pred[[1]], pred[[1]]!="")
   pred = as.numeric(pred[2:length(pred)])
-
 
   data.frame(year = syr, biomass = obs, pred = pred, se = se) %>%
     tidytable::mutate.(lci = biomass - 1.96 * se,
@@ -1358,8 +1326,8 @@ process_results_pop <- function(year = 2023,
                        lci = ifelse(lci < 0, 0 ,lci)) -> srv
   write.csv(srv, paste0(model_dir, "/processed/survey.csv"), row.names = FALSE)
 
-  # recruitment ----
-  N = REP[grep("Numbers", REP):(grep("Obs_P_fish_age", REP)-2)]
+  # recruitment
+  N = rep[grep("Numbers", rep):(grep("Obs_P_fish_age", rep)-2)]
   t = NA
   for(i in 1:length(yrs)){
     ts = as.numeric(base::strsplit(N[i+1]," ")[[1]][3])
@@ -1367,7 +1335,7 @@ process_results_pop <- function(year = 2023,
   }
   pred_rec = t[!is.na(t)]
 
-  # biomass & F & recruits ----
+  # biomass & F & recruits
   data.frame(year = yrs,
              tot_biom = rep_item("Tot_biom"),
              sp_biom = rep_item("SpBiom"),
@@ -1375,7 +1343,7 @@ process_results_pop <- function(year = 2023,
              recruits = pred_rec) -> bio_rec_f
   write.csv(bio_rec_f, paste0(model_dir, "/processed/bio_rec_f.csv"), row.names = FALSE)
 
-  # selectivity ----
+  # selectivity
   data.frame(age = ages,
              fish1 = rep_item("Fishery_Selectivity_1967-1976"),
              fish2 = rep_item("Fishery_Selectivity_1977-1995"),
@@ -1384,53 +1352,100 @@ process_results_pop <- function(year = 2023,
              srv1 = rep_item("Trawl_Survey_Selectivity")) -> selex
   write.csv(selex, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
 
-  # weight-at-age, maturity ----
+  # weight-at-age, maturity
   data.frame(age = ages,
              srv1 = rep_item("Weight"),
              maturity = rep_item("Maturity")) -> waa_mat
   write.csv(waa_mat, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
 
-  # number of parameters ----
+  # number of parameters
 
-  data.frame(num_param = as.numeric(REP[(grep("Number parameters estimated",REP)+1)])) -> num_param
+  data.frame(num_param = as.numeric(rep[(grep("Number parameters estimated",rep)+1)])) -> num_param
 
-  # key parameters ----
+  # key parameters
 
-  data.frame(q_trawl = as.numeric(REP[(grep("q_trawl",REP)+1):(grep("nat_mort",REP)[1]-1)]),
-             nat_mort = as.numeric(REP[(grep("nat_mort",REP)+1):(grep("sigr",REP)[1]-1)]),
-             sigr = as.numeric(REP[(grep("sigr",REP)+1):(grep("log_mean_rec",REP)[1]-1)]),
-             log_mean_rec = as.numeric(REP[(grep("log_mean_rec",REP)+1):(grep("q_alt",REP)[1]-1)])) -> key_param
+  data.frame(q_trawl = as.numeric(rep[(grep("q_trawl",rep)+1):(grep("nat_mort",rep)[1]-1)]),
+             nat_mort = as.numeric(rep[(grep("nat_mort",rep)+1):(grep("sigr",rep)[1]-1)]),
+             sigr = as.numeric(rep[(grep("sigr",rep)+1):(grep("log_mean_rec",rep)[1]-1)]),
+             log_mean_rec = as.numeric(rep[(grep("log_mean_rec",rep)+1):(grep("q_alt",rep)[1]-1)])) -> key_param
   write.csv(key_param, paste0(model_dir, "/processed/key_param.csv"), row.names = FALSE)
 
-  # fishery age comp ----
+  # fishery age comp
 
-  obs = REP[grep("Obs_P_fish_age",REP):(grep("Pred_P_fish_age",REP)-2)]
-  pred = REP[grep("Pred_P_fish_age",REP):(grep("yrs_fish_age",REP)-2)]
+  obs = rep[grep("Obs_P_fish_age",rep):(grep("Pred_P_fish_age",rep)-2)]
+  pred = rep[grep("Pred_P_fish_age",rep):(grep("yrs_fish_age",rep)-2)]
 
   fac <- afscassess::purrit(obs, pred, rec_age, plus_age, comp = "age", lenbins = size_bins)
 
   afscassess::fac_table(year, model_dir)
 
-  # fishery size comp ----
+  # fishery size comp
 
-  obs = REP[grep("Obs_P_fish_size",REP):(grep("Pred_P_fish_size",REP)-2)]
-  pred = REP[grep("Pred_P_fish_size",REP):(grep("yrs_fish_size",REP)-2)]
+  obs = rep[grep("Obs_P_fish_size",rep):(grep("Pred_P_fish_size",rep)-2)]
+  pred = rep[grep("Pred_P_fish_size",rep):(grep("yrs_fish_size",rep)-2)]
 
   fsc <- afscassess::purrit(obs, pred, rec_age, plus_age, comp = "length", lenbins = size_bins)
 
   afscassess::fsc_table(year, model_dir)
 
-  # survey age comp ----
+  # survey age comp
 
-  obs = REP[grep("Obs_P_srv1_age",REP):(grep("Pred_P_srv1_age",REP)-2)]
-  pred = REP[grep("Pred_P_srv1_age",REP):(grep("yrs_srv1_age",REP)-2)]
+  obs = rep[grep("Obs_P_srv1_age",rep):(grep("Pred_P_srv1_age",rep)-2)]
+  pred = rep[grep("Pred_P_srv1_age",rep):(grep("yrs_srv1_age",rep)-2)]
 
   sac <- afscassess::purrit(obs, pred, rec_age, plus_age, comp = "age", lenbins = size_bins)
 
   afscassess::sac_table(year, model_dir)
   afscassess::ssc_table(year, model_dir)
 
-  # put all the results into a list ----
+
+
+
+  # mcmc results
+  if(mcmc == TRUE){
+
+    # read in files
+    psv <- file(paste0(model_dir,"/mcmc/",modname,".psv"), "rb")
+    std <- read.delim(list.files(paste0(model_dir, "/mcmc"), pattern="*.std", full.names = TRUE), sep="", header = TRUE)
+
+    # mcmc parameters
+    npar = readBin(psv, what = integer(), n=1)
+    mcmcs = readBin(psv, what = numeric(), n = (npar * no_mcmc / mcsave))
+    close(psv)
+    mcmc_params = matrix(mcmcs, byrow = TRUE, ncol = npar)
+
+    yrs_srv1_biom <- data.frame(strsplit(rep[grep("Bottom Trawl Survey Biomass", rep) + 1]," ")) %>%
+      tidytable::rename(srv_yr = names(yrs_srv1_biom)) %>%
+      tidytable::filter(srv_yr != "",
+                        srv_yr != "Year:") %>%
+      tidytable::mutate(srv_yr = as.numeric(srv_yr))
+
+    # thin the string
+    mcmc_params = mcmc_params[501:nrow(mcmc_params),]
+    colnames(mcmc_params) = std$name[1:ncol(mcmc_params)]
+    write.csv(mcmc_params,paste0(model_dir, "/processed/mcmc.csv"), row.names = FALSE)
+
+    # mceval phase output
+    mceval <- read.delim(list.files(paste0(model_dir, "/mcmc"), pattern="*evalout.prj", full.names = TRUE), sep="", header = FALSE)
+    colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort",
+                         "ABC", "obj_fun",
+                         paste0("tot_biom_", yrs),
+                         paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
+                         paste0("spawn_biom_", yrs),
+                         "log_mean_rec",
+                         paste0("spawn_biom_proj_", max(yrs) + 1:15),
+                         paste0("pred_catch_proj_", max(yrs) + 1:15),
+                         paste0("rec_proj_", max(yrs) + 1:10),
+                         paste0("tot_biom_proj_", max(yrs) +1:2),
+                         paste0("srv1_biom_",yrs_srv1_biom$srv_yr))
+
+    #Curry's Change
+    mceval = mceval[501:nrow(mceval),]
+    write.csv(mceval, paste0(model_dir, "/processed/mceval.csv"), row.names = FALSE)
+
+  }
+
+  # put all the results into a list
   # yrs = years of model
   # ages is ages
   # styr_rec is the start year for recruitment (further back to populate initial abundance)
@@ -1445,6 +1460,8 @@ process_results_pop <- function(year = 2023,
   # fac is obs and pred fishery age comp
   # fsc is obs and pred fishery size comp
   # sac is obs and pred survey age comp
+  # mcmc_params is the mcmc chain for values in std file
+  # mceval is the mcmc chain for quants listed in evalout.prj file
 
 
 
@@ -1462,6 +1479,12 @@ process_results_pop <- function(year = 2023,
                    fac = fac,
                    fsc = fsc,
                    sac = sac)
+
+  if(mcmc == TRUE){
+    proc_res <- c(proc_res,
+                  mcmc_params = mcmc_params,
+                  mceval = mceval)
+  }
 
   proc_res
 }
