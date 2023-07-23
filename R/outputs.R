@@ -1416,7 +1416,7 @@ process_results_pop <- function(year = 2023,
     mcmc_params = matrix(mcmcs, byrow = TRUE, ncol = npar)
 
     yrs_srv1_biom <- data.frame(strsplit(rep[grep("Bottom Trawl Survey Biomass", rep) + 1]," ")) %>%
-      tidytable::rename(srv_yr = names(yrs_srv1_biom)) %>%
+      tidytable::rename(srv_yr = names(.)) %>%
       tidytable::filter(srv_yr != "",
                         srv_yr != "Year:") %>%
       tidytable::mutate(srv_yr = as.numeric(srv_yr))
