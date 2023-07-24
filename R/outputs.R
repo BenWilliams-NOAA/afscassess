@@ -1200,6 +1200,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param proj logical, does this run inclue projection model results?
 #' @param on_year logical, is the assessment an 'on' or 'off' year
 #' @param retro logical, does this run include retrospective results?
+#' @param retro_mcmc logical, does this run include mcmc retrospective results?
 #' @param ... future functions
 #' @export process_results_pop
 
@@ -1214,7 +1215,8 @@ process_results_pop <- function(year = 2023,
                                 mcsave = 100,
                                 proj = FALSE,
                                 on_year = TRUE,
-                                retro = FALSE, ...){
+                                retro = FALSE,
+                                retro_mcmc = FALSE,...){
 
   # setup
 
@@ -1445,6 +1447,177 @@ process_results_pop <- function(year = 2023,
 
   }
 
+  if(retro == TRUE){
+    # read in recruitment and ssb results
+    retro_rec <- vroom::vroom(paste0(model_dir, "/processed/retro_rec.csv")) %>%
+      tidytable::rename(year = '...1')
+    retro_ssb <- vroom::vroom(paste0(model_dir, "/processed/retro_ssb.csv")) %>%
+      tidytable::rename(year = '...1')
+
+    # get survey biomass years for report file
+    yrs_srv1_biom <- data.frame(strsplit(rep[grep("Bottom Trawl Survey Biomass", rep) + 1]," ")) %>%
+      tidytable::rename(srv_yr = names(.)) %>%
+      tidytable::filter(srv_yr != "",
+                        srv_yr != "Year:") %>%
+      tidytable::mutate(srv_yr = as.numeric(srv_yr))
+
+    # read in retro mcmc results to get uci and lci for retro ssb
+    if(retro_mcmc == TRUE){
+
+      # helper functions
+      get_colnames <- function(ret_yr){
+        eval_names = c("sigr", "q_srv1", "q_srv2", "F40", "natmort",
+                       "ABC", "obj_fun",
+                       paste0("tot_biom_", yrs[which(yrs <= ret_yr)]),
+                       paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs[which(yrs <= ret_yr)])])),
+                       paste0("spawn_biom_", yrs[which(yrs <= ret_yr)]),
+                       "log_mean_rec",
+                       paste0("spawn_biom_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
+                       paste0("pred_catch_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
+                       paste0("rec_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:10),
+                       paste0("tot_biom_proj_", max(yrs[which(yrs <= ret_yr)]) +1:2),
+                       paste0("srv1_biom_",yrs_srv1_biom$srv_yr[which(yrs_srv1_biom$srv_yr <= ret_yr)]))
+        eval_names
+      }
+
+      get_retro_res <- function(index_yr){
+        ret <- read.delim(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], sep="", header = FALSE)
+        ret_yr <- as.numeric(strsplit(strsplit(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], split = c("mcmc_"))[[1]][2], split = ".prj")[[1]])
+        ret %>%
+          tidytable::rename(!!!setNames(colnames(ret), get_colnames(ret_yr))) %>%
+          tidytable::select(contains("spawn_biom")) %>%
+          tidytable::select(contains(as.character(yrs[1]:yrs[length(yrs[which(yrs <= ret_yr)])]))) -> ret_res
+        ret_res
+      }
+
+      # get mcmc retro results for ssb
+      ret1 <- get_retro_res(1)
+      ret2 <- get_retro_res(2)
+      ret3 <- get_retro_res(3)
+      ret4 <- get_retro_res(4)
+      ret5 <- get_retro_res(5)
+      ret6 <- get_retro_res(6)
+      ret7 <- get_retro_res(7)
+      ret8 <- get_retro_res(8)
+      ret9 <- get_retro_res(9)
+      ret10 <- get_retro_res(10)
+
+      # get mcmc uci for ssb
+      ret1 %>%
+        tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+        tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+        tidytable::summarise(uci_ret1 = quantile(ssb, 0.975), .by = year) %>%
+        tidytable::right_join(ret2 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret2 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret3 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret3 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret4 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret4 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret5 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret5 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret6 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret6 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret7 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret7 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret8 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret8 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret9 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret9 = quantile(ssb, 0.975), .by = year)) %>%
+        tidytable::right_join(ret10 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret10 = quantile(ssb, 0.975), .by = year)) -> retro_ssb_uci
+      colnames(retro_ssb_uci) = colnames(retro_ssb)
+
+      # get mcmc lci for ssb
+      ret1 %>%
+        tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+        tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+        tidytable::summarise(uci_ret1 = quantile(ssb, 0.025), .by = year) %>%
+        tidytable::right_join(ret2 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret2 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret3 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret3 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret4 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret4 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret5 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret5 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret6 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret6 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret7 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret7 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret8 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret8 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret9 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret9 = quantile(ssb, 0.025), .by = year)) %>%
+        tidytable::right_join(ret10 %>%
+                                tidytable::pivot_longer(names_to = "year", values_to = "ssb") %>%
+                                tidytable::mutate(year = stringr::str_replace(year, "spawn_biom_", "")) %>%
+                                tidytable::summarise(uci_ret10 = quantile(ssb, 0.025), .by = year)) -> retro_ssb_lci
+      colnames(retro_ssb_lci) = colnames(retro_ssb)
+
+      write.csv(retro_ssb_uci, paste0(model_dir, "/processed/retro_ssb_uci.csv"), row.names = FALSE)
+      write.csv(retro_ssb_lci, paste0(model_dir, "/processed/retro_ssb_lci.csv"), row.names = FALSE)
+    }
+
+    # compute mohn's rho
+    retro_ssb %>%
+      tidytable::select(year, colnames(retro_ssb)[length(retro_ssb[1,])]) %>%
+      tidytable::rename('ref_yr' = colnames(retro_ssb)[length(retro_ssb[1,])]) -> end_yr_ssb
+
+    retro_ssb %>%
+      tidytable::pivot_longer(names_to = "retro_year", values_to = "ssb") %>%
+      tidytable::filter(retro_year != 'year',
+                        retro_year != colnames(retro_ssb)[length(retro_ssb[1,])]) %>%
+      tidytable::mutate(year = retro_ssb$year, .by = retro_year) %>%
+      tidytable::filter(year >= 1977) %>%
+      tidytable::left_join(end_yr_ssb) %>%
+      tidytable::mutate(per_diff = (ssb - ref_yr) / ref_yr) %>%
+      tidytable::select(retro_year, year, per_diff) -> stat_tbl
+
+    stat_tbl %>%
+      tidytable::summarise(avg_per = mean(per_diff, na.rm = TRUE), .by = retro_year) %>%
+      tidytable::summarise(wh_rho = mean(avg_per)) -> wh_rho
+
+    stat_tbl %>%
+      tidytable::filter(retro_year == year) %>%
+      tidytable::summarise(mohns_rho = mean(per_diff)) -> mohns_rho
+    write.csv(mohns_rho, paste0(model_dir, "/processed/retro_mohns_rho.csv"), row.names = FALSE)
+
+  }
+
   # put all the results into a list
   # yrs = years of model
   # ages is ages
@@ -1462,6 +1635,12 @@ process_results_pop <- function(year = 2023,
   # sac is obs and pred survey age comp
   # mcmc_params is the mcmc chain for values in std file
   # mceval is the mcmc chain for quants listed in evalout.prj file
+  # retro_rec are retrospective recruitment estimates
+  # retro_ssb are retrospective spawning biomass estimates
+  # retro_ssb_uci are uci's from mcmc for retrospective spawning biomass estimates
+  # retro_ssb_lci are lci's from mcmc for retrospective spawning biomass estimates
+  # wh_rho is wood's hole rho for retro pattern
+  # mohns_rho is mohn's hole rho for retro pattern
 
   proc_res <- list(yrs = yrs,
                    ages = ages,
@@ -1482,6 +1661,16 @@ process_results_pop <- function(year = 2023,
     proc_res <- c(proc_res,
                   list(mcmc_params = mcmc_params,
                        mceval = mceval))
+  }
+
+  if(retro == TRUE){
+    proc_res <- c(proc_res,
+                  list(retro_rec = retro_rec,
+                       retro_ssb = retro_ssb,
+                       retro_ssb_uci = retro_ssb_uci,
+                       retro_ssb_lci = retro_ssb_lci,
+                       wh_rho = wh_rho,
+                       mohns_rho = mohns_rho))
   }
 
   proc_res
