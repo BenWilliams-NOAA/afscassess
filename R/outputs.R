@@ -547,7 +547,6 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
 
       # freeze sigr
       ctl = read.delim(here::here(year, 'mgmt', model, grep("ctl", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
-      std = read.delim(here::here(year, 'mgmt', model, grep("std", list.files(here::here(year, 'mgmt', model, 'retro', 'model')), value = TRUE)), sep = "", header = FALSE)
 
       sigr = as.numeric(std[which(std[,2] == "sigr"),3])
 
