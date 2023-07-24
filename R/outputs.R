@@ -520,6 +520,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
                 file = here::here(year, 'mgmt', model, 'retro', 'model', paste0(dat_name, "_", endyr,".dat")),
                 quote = FALSE, row.names = FALSE, col.names = FALSE)
 
+    ctl <- read.delim(here::here(year, "mgmt", model, paste0(dat_name, "_", year, ".ctl")), sep = "", header=F)
     ctl[2,1] = paste0(dat_name, "_", endyr, ".dat")
     ctl[4,1] = as.character(endyr)
     write.table(ctl, file = here::here(year, 'mgmt', model, 'retro', 'model', paste0(dat_name, "_", year, ".ctl")),
