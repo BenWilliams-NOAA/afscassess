@@ -551,6 +551,8 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
 
       sigr = as.numeric(std[which(std[,2] == "sigr"),3])
 
+      ctl[2,1] = paste0(dat_name, "_", endyr, ".dat")
+      ctl[4,1] = as.character(endyr)
       ctl[which(ctl[,3] == "sigrprior"),1] = sigr
       ctl[which(ctl[,3] == "ph_sigr"),1] = -1
 
