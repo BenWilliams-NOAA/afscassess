@@ -1194,6 +1194,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param modname name of model
 #' @param mcmc logical, does this run include MCMC evaluations to be processed?
 #' @param no_mcmc number of mcmc runs
+#' @param mcsave number of mcmc draws saved
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
 #' @param mcsave the number of mcmcs saved
@@ -1201,6 +1202,8 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param on_year logical, is the assessment an 'on' or 'off' year
 #' @param retro logical, does this run include retrospective results?
 #' @param retro_mcmc logical, does this run include mcmc retrospective results?
+#' @param no_mcmc_ret number of mcmc runs in retro run
+#' @param mcsave_ret number of mcmc draws saved in retro run
 #' @param ... future functions
 #' @export process_results_pop
 
@@ -1216,7 +1219,9 @@ process_results_pop <- function(year = 2023,
                                 proj = FALSE,
                                 on_year = TRUE,
                                 retro = FALSE,
-                                retro_mcmc = FALSE,...){
+                                retro_mcmc = FALSE,
+                                no_mcmc_ret = 100000,
+                                mcsave_ret = 100,...){
 
   # setup
 
@@ -1487,6 +1492,7 @@ process_results_pop <- function(year = 2023,
           tidytable::rename(!!!setNames(colnames(ret), get_colnames(ret_yr))) %>%
           tidytable::select(contains("spawn_biom")) %>%
           tidytable::select(contains(as.character(yrs[1]:yrs[length(yrs[which(yrs <= ret_yr)])]))) -> ret_res
+        ret_res = ret_res[(0.1 * mcmcruns_ret / mcmcsave_ret + 1):nrow(ret_res),]
         ret_res
       }
 
