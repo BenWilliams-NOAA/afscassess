@@ -1192,7 +1192,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param year  assessment year
 #' @param model_dir  full path of model being evaluated
 #' @param modname name of model
-#' @param modname name of data file / region_species
+#' @param dat_name name of data file / region_species
 #' @param mcmc logical, does this run include MCMC evaluations to be processed?
 #' @param no_mcmc number of mcmc runs
 #' @param mcsave number of mcmc draws saved
