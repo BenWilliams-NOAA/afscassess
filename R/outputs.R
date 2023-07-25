@@ -1192,6 +1192,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 #' @param year  assessment year
 #' @param model_dir  full path of model being evaluated
 #' @param modname name of model
+#' @param modname name of data file / region_species
 #' @param mcmc logical, does this run include MCMC evaluations to be processed?
 #' @param no_mcmc number of mcmc runs
 #' @param mcsave number of mcmc draws saved
@@ -1210,6 +1211,7 @@ recruit_tbl <- function(year, model, model_name, rec_age){
 process_results_pop <- function(year = 2023,
                                 model_dir = NULL,
                                 modname,
+                                dat_name,
                                 rec_age = 2,
                                 plus_age = 25,
                                 size_bins = NULL,
@@ -1238,6 +1240,7 @@ process_results_pop <- function(year = 2023,
 
 
   # helper functions
+
   rep_item <- function(name){
     t <- strsplit(rep[grep(name, rep)]," ")
     t <- subset(t[[1]], t[[1]]!="")
@@ -1246,6 +1249,86 @@ process_results_pop <- function(year = 2023,
     } else {
       as.numeric(t[2:length(t)])
     }
+  }
+
+  get_colnames <- function(ret_yr){
+    eval_names = c("sigr", "q_srv1", "q_srv2", "F40", "natmort",
+                   "ABC", "obj_fun",
+                   paste0("tot_biom_", yrs[which(yrs <= ret_yr)]),
+                   paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs[which(yrs <= ret_yr)])])),
+                   paste0("spawn_biom_", yrs[which(yrs <= ret_yr)]),
+                   "log_mean_rec",
+                   paste0("spawn_biom_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
+                   paste0("pred_catch_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
+                   paste0("rec_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:10),
+                   paste0("tot_biom_proj_", max(yrs[which(yrs <= ret_yr)]) +1:2),
+                   paste0("srv1_biom_",yrs_srv1_biom$srv_yr[which(yrs_srv1_biom$srv_yr <= ret_yr)]))
+    eval_names
+  }
+
+  get_retro_res <- function(index_yr){
+    ret <- read.delim(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], sep="", header = FALSE)
+    ret_yr <- as.numeric(strsplit(strsplit(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], split = c("mcmc_"))[[1]][2], split = ".prj")[[1]])
+    ret %>%
+      tidytable::rename(!!!setNames(colnames(ret), get_colnames(ret_yr))) %>%
+      tidytable::select(contains("spawn_biom")) %>%
+      tidytable::select(contains(as.character(yrs[1]:yrs[length(yrs[which(yrs <= ret_yr)])]))) -> ret_res
+    ret_res = ret_res[(0.1 * mcmcruns_ret / mcmcsave_ret + 1):nrow(ret_res),]
+    ret_res
+  }
+
+  mscen_tbl <- function(maxf, authf, start, end, catch = FALSE){
+    if(catch == FALSE){
+      st = grep(start, maxf)
+      ed = grep(end, maxf)
+    } else{
+      st = grep(start, maxf)[which(grep(start, maxf)%%2 == 1)]
+      ed = grep(end, maxf)
+    }
+
+    # maxf scenario
+    data.frame(stringr::str_split_fixed(maxf[(st[1] + 2):(ed[1] - 2)], " ", n = 14)) %>%
+      tidytable::select(X1, X7) %>%
+      tidytable::mutate(year = as.numeric(X1),
+                        maxf = as.numeric(X7)) %>%
+      tidytable::select(-X1, -X7) %>%
+      # author's f scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(st[1] + 2):(ed[1] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               authf = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) %>%
+      # half maxf scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(maxf[(st[3] + 2):(ed[3] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               half_maxf = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) %>%
+      # 5-yr avg f scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(maxf[(st[4] + 2):(ed[4] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               avg5f = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) %>%
+      # no fishing scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(maxf[(st[5] + 2):(ed[5] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               nof = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) %>%
+      # overfishing scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(maxf[(st[6] + 2):(ed[6] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               overf = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) %>%
+      # approaching overfishing scenario
+      tidytable::left_join(data.frame(stringr::str_split_fixed(maxf[(st[7] + 2):(ed[7] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(year = as.numeric(X1),
+                                               appoverf = as.numeric(X7)) %>%
+                             tidytable::select(-X1, -X7)) -> mscen_tbl
+    mscen_tbl
   }
 
 
@@ -1469,33 +1552,6 @@ process_results_pop <- function(year = 2023,
     # read in retro mcmc results to get uci and lci for retro ssb
     if(retro_mcmc == TRUE){
 
-      # helper functions
-      get_colnames <- function(ret_yr){
-        eval_names = c("sigr", "q_srv1", "q_srv2", "F40", "natmort",
-                       "ABC", "obj_fun",
-                       paste0("tot_biom_", yrs[which(yrs <= ret_yr)]),
-                       paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs[which(yrs <= ret_yr)])])),
-                       paste0("spawn_biom_", yrs[which(yrs <= ret_yr)]),
-                       "log_mean_rec",
-                       paste0("spawn_biom_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
-                       paste0("pred_catch_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:15),
-                       paste0("rec_proj_", max(yrs[which(yrs <= ret_yr)]) + 1:10),
-                       paste0("tot_biom_proj_", max(yrs[which(yrs <= ret_yr)]) +1:2),
-                       paste0("srv1_biom_",yrs_srv1_biom$srv_yr[which(yrs_srv1_biom$srv_yr <= ret_yr)]))
-        eval_names
-      }
-
-      get_retro_res <- function(index_yr){
-        ret <- read.delim(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], sep="", header = FALSE)
-        ret_yr <- as.numeric(strsplit(strsplit(list.files(paste0(model_dir, "/retro/results"), pattern="*.prj", full.names = TRUE)[index_yr], split = c("mcmc_"))[[1]][2], split = ".prj")[[1]])
-        ret %>%
-          tidytable::rename(!!!setNames(colnames(ret), get_colnames(ret_yr))) %>%
-          tidytable::select(contains("spawn_biom")) %>%
-          tidytable::select(contains(as.character(yrs[1]:yrs[length(yrs[which(yrs <= ret_yr)])]))) -> ret_res
-        ret_res = ret_res[(0.1 * mcmcruns_ret / mcmcsave_ret + 1):nrow(ret_res),]
-        ret_res
-      }
-
       # get mcmc retro results for ssb
       ret1 <- get_retro_res(1)
       ret2 <- get_retro_res(2)
@@ -1624,6 +1680,109 @@ process_results_pop <- function(year = 2023,
 
   }
 
+  # get projection model results
+  if(proj == TRUE){
+
+    maxf <- readLines(paste0(model_dir, "/proj/", dat_name, "_max_out/percentiles.out"))
+    authf <- readLines(paste0(model_dir, "/proj/", dat_name, "_out/percentiles.out"))
+    auth_bs <- read.delim(paste0(model_dir, "/proj/", dat_name, "_out/bigsum.dat"), sep="", header = TRUE)
+
+    # compile mngmnt scenario tables
+
+    # spawning biomass
+    mscen_tbl(maxf, authf, start = "Spawning_Biomass", end = "Fishing_mortality") %>%
+      tidytable::mutate(maxf = 1000 * maxf,
+                        authf = 1000 * authf,
+                        half_maxf = 1000 * half_maxf,
+                        avg5f = 1000 * avg5f,
+                        nof = 1000 * nof,
+                        overf = 1000 * overf,
+                        appoverf = 1000 * appoverf) -> mscen_ssb
+    write.csv(mscen_ssb, paste0(model_dir, "/processed/mscen_ssb.csv"), row.names = FALSE)
+
+    # fishing mortality
+    mscen_tbl(maxf, authf, start = "Fishing_mortality", end = "Total_Biomass") %>%
+      tidytable::mutate(maxf = round(maxf, digits = 3),
+                        authf = round(authf, digits = 3),
+                        half_maxf = round(half_maxf, digits = 3),
+                        avg5f = round(avg5f, digits = 3),
+                        nof = round(nof, digits = 3),
+                        overf = round(overf, digits = 3),
+                        appoverf = round(appoverf, digits = 3)) -> mscen_f
+    write.csv(mscen_f, paste0(model_dir, "/processed/mscen_f.csv"), row.names = FALSE)
+
+    # yield
+    mscen_tbl(maxf, authf, start = "Catch", end = "Spawning_Biomass", catch = TRUE) %>%
+      tidytable::mutate(maxf = 1000 * maxf,
+                        authf = 1000 * authf,
+                        half_maxf = 1000 * half_maxf,
+                        avg5f = 1000 * avg5f,
+                        nof = 1000 * nof,
+                        overf = 1000 * overf,
+                        appoverf = 1000 * appoverf) -> mscen_yld
+    write.csv(mscen_yld, paste0(model_dir, "/processed/mscen_yld.csv"), row.names = FALSE)
+
+
+    # get executive summary table quants
+
+    # projected total biomass
+    data.frame(stringr::str_split_fixed(authf[(grep("Total_Biomass", authf)[1] + 2):(grep("Catch", authf)[3] - 2)], " ", n = 14)) %>%
+      tidytable::select(X1, X7) %>%
+      tidytable::mutate(X1 = as.numeric(X1),
+                        tb_proj = as.numeric(X7) * 1000) %>%
+      tidytable::select(-X7) %>%
+      tidytable::filter(X1 %in% c(year + 1, year + 2)) %>%
+      tidytable::rename(year = X1) %>%
+      #projected spawning biomass
+      tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("Spawning_Biomass", authf)[1] + 2):(grep("Fishing_mortality", authf)[1] - 2)], " ", n = 14)) %>%
+                             tidytable::select(X1, X7) %>%
+                             tidytable::mutate(X1 = as.numeric(X1),
+                                               ssb_proj = as.numeric(X7) * 1000) %>%
+                             tidytable::select(-X7) %>%
+                             tidytable::filter(X1 %in% c(year + 1, year + 2)) %>%
+                             tidytable::rename(year = X1)) %>%
+      # B0, 40, 35
+      tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("SB0", authf) + 1)], " ", n = 6)) %>%
+                             tidytable::select(X1, X2, X3) %>%
+                             tidytable::mutate(sb0 = as.numeric(X1) * 1000,
+                                               sb40 = as.numeric(X2) * 1000,
+                                               sb35 = as.numeric(X3) * 1000) %>%
+                             tidytable::select(-X1, -X2, -X3) %>%
+                             tidytable::slice(rep(1:n(), each = 2)) %>%
+                             tidytable::mutate(X1 = c(year + 1, year +2)) %>%
+                             tidytable::rename(year = X1)) %>%
+      # f_ofl and f_abc
+      tidytable::mutate(f_ofl = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3),
+                                                     ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3)),
+                        maxf_abc = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3),
+                                                        ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3)),
+                        f_abc = maxf_abc,
+                        tier = tidytable::case_when(ssb_proj > sb40 ~ "3a",
+                                                    ssb_proj < sb40 ~ "3b"),
+                        .by = year) %>%
+      # ofl and abc
+      tidytable::left_join(auth_bs %>%
+                             tidytable::filter(alt == 1) %>%
+                             tidytable::select(year, ofl, abc) %>%
+                             tidytable::rename(x = year) %>%
+                             tidytable::filter(x %in% c(year + 1, year + 2)) %>%
+                             tidytable::rename(year = x) %>%
+                             tidytable::mutate(ofl = round(ofl * 1000, digits = 0),
+                                               maxabc = round(abc * 1000, digits = 0),
+                                               abc = maxabc)) %>%
+      # natural mortality
+      tidytable::left_join(data.frame(round(as.numeric(stringr::str_split(readLines(paste0(model_dir, "/proj/model/data/", dat_name, ".dat"))[grep("Natural_Mortality",readLines(paste0(model_dir, "/proj/model/data/", dat_name, ".dat"))) + 1], " ")[[1]][2]), digits = 3)) %>%
+                             tidytable::slice(rep(1:n(), each = 2)) %>%
+                             tidytable::rename("m" = round.as.numeric.stringr..str_split.readLines.paste0.model_dir..) %>%
+                             tidytable::mutate(x = c(year + 1, year + 2)) %>%
+                             tidytable::rename(year = x)) %>%
+      # reorder columns to match exec summ table
+      tidytable::select(year, m, tier, tb_proj, ssb_proj, sb0, sb40, sb35, f_ofl, maxf_abc, f_abc, ofl, maxabc, abc) -> exec_summ
+    # write out
+    write.csv(exec_summ, paste0(model_dir, "/processed/exec_summ.csv"), row.names = FALSE)
+
+  }
+
   # put all the results into a list
   # yrs = years of model
   # ages is ages
@@ -1677,6 +1836,14 @@ process_results_pop <- function(year = 2023,
                        retro_ssb_lci = retro_ssb_lci,
                        wh_rho = wh_rho,
                        mohns_rho = mohns_rho))
+  }
+
+  if(proj == TRUE){
+    proc_res <- c(proc_res,
+                  list(mscen_ssb = mscen_ssb,
+                       mscen_f = mscen_f,
+                       mscen_yld = mscen_yld,
+                       exec_summ = exec_summ))
   }
 
   proc_res
