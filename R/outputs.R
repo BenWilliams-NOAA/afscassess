@@ -899,7 +899,7 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
   # make summary file
   read.delim(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
              sep = "", header = TRUE) %>%
-    dplyr::rename_all(., .funs = tolower) %>%
+    tidytable::rename_with(tolower) %>%
     tidytable::summarise(abc = mean(abc),
                          ofl = mean(ofl),
                          catch = mean(catch),
@@ -916,11 +916,16 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
   # run author's f scenario
 
   # get catch for next three years under max f scenario
-  percentiles <- readLines(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "percentiles.out"), warn = FALSE)
+  percentiles <- readLines(here::here(st_year, "mgmt", model, "proj", paste0(spec, "_max_out"), "percentiles.out"),
+                           warn = FALSE)
 
-  c_plus1 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][4],split=" ")[[1]][8])
-  c_plus2 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][5],split=" ")[[1]][8])
-  c_plus3 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][6],split=" ")[[1]][8])
+  c_plus1 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][4],
+                                split=" ")[[1]][8])
+  c_plus2 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][5],
+                                split=" ")[[1]][8])
+  c_plus3 = as.numeric(strsplit(percentiles[grep("Catch",percentiles)[1]:grep("Spawning_Biomass",percentiles)[1]][6],
+                                split=" ")[[1]][8])
+
 
 
   # get together data file with future catch set at yield ratio * max catch
@@ -942,15 +947,25 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
                  1,
                  "# Catch in each future year",
                  if(on_year == TRUE){
-                   c(paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)),
-                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
-                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))}
+                   c(paste0(paste(st_year, prj_par$proj_catch, sep = "\t"),
+                            " # Estimated from catch thru ",
+                            as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)),
+                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"),
+                            " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"),
+                            " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))}
                  else{
-                   c(paste0(paste(st_year - 1, round(prev_c$V1), sep = "\t"), " # Finalized previous year catch"),
-                     paste0(paste(st_year, prj_par$proj_catch, sep = "\t")," # Estimated from catch thru ", as.Date(catch_date$V1)," with expansion factor = ", round(prj_par$ratio, digits = 4)),
-                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
-                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
-                     paste0(paste(st_year + 3, round(c_plus3 * 1000 * prj_par$yld), sep = "\t"), " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))})
+                   c(paste0(paste(st_year - 1, round(prev_c$V1), sep = "\t"),
+                            " # Finalized previous year catch"),
+                     paste0(paste(st_year, prj_par$proj_catch, sep = "\t"),
+                            " # Estimated from catch thru ", as.Date(catch_date$V1),
+                            " with expansion factor = ", round(prj_par$ratio, digits = 4)),
+                     paste0(paste(st_year + 1, round(c_plus1 * 1000 * prj_par$yld), sep = "\t"),
+                            " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 2, round(c_plus2 * 1000 * prj_par$yld), sep = "\t"),
+                            " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)),
+                     paste0(paste(st_year + 3, round(c_plus3 * 1000 * prj_par$yld), sep = "\t"),
+                            " # Estimated as Max F scenario catch * yieldratio of ", round(prj_par$yld, digits = 3)))})
 
   write.table(spp_catch, file = here::here(st_year, "mgmt", model, "proj", "model", "spp_catch.dat"),
               quote = FALSE, row.names = FALSE, col.names = FALSE)
@@ -976,7 +991,7 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
   # make summary file
   read.delim(here::here(st_year, "mgmt", model, "proj", "model", "bigfile.out"),
              sep = "", header = TRUE) %>%
-    dplyr::rename_all(., .funs = tolower) %>%
+    tidytable::rename_with(tolower) %>%
     tidytable::summarise(abc = mean(abc),
                          ofl = mean(ofl),
                          catch = mean(catch),
@@ -998,28 +1013,27 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
 fac_table <- function(year, model_dir){
 
   options(scipen = 999)
-  fsc = read.csv(here::here(year, "data", "output", "fsh_age_comp.csv"))
+  fsc = vroom::vroom(here::here(year, "data", "output", "fsh_age_comp.csv"))
 
   fsc %>%
-    dplyr::select(n_s, n_h) %>%
+    tidytable::select(n_s, n_h) %>%
     t(.) %>%
     as.data.frame() %>%
     tibble::rownames_to_column("name") -> samps
 
   fsc %>%
-    dplyr::select(-n_s, -n_h, -AA_Index) %>%
-    tidyr::pivot_longer(-c(year)) %>%
-    tidyr::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
-    as.data.frame() %>%
-    dplyr::mutate_if(is.numeric, round, digits = 4) %>%
-    dplyr::mutate(name = gsub("X", "", name),
-                  name = ifelse(dplyr::row_number() == dplyr::n(), paste0(name, "+"), name )) %>%
-    dplyr::rename_all(~stringr::str_replace(., "y", "")) -> comp
+    tidytable::select(-n_s, -n_h, -AA_Index) %>%
+    tidytable::pivot_longer(-c(year)) %>%
+    tidytable::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
+    tidytable::mutate(tidytable::across(tidytable::where(is.numeric), round, digits=4)) %>%
+    tidytable::mutate(name = gsub("X", "", name),
+                      name = ifelse(tidytable::row_number() == tidytable::n(), paste0(name, "+"), name )) %>%
+    tidytable::rename_with(~stringr::str_replace(., "y", "")) -> comp
 
   names(samps) <- names(comp)
 
-  dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(model_dir, "tables", "fac.csv"), row.names = FALSE)
+  tidytable::bind_rows(comp, samps)  %>%
+    vroom::vroom_write(here::here(model_dir, "tables", "fac.csv"), delim=",")
 
 }
 
@@ -1029,28 +1043,27 @@ fac_table <- function(year, model_dir){
 fsc_table <- function(year, model_dir){
 
   options(scipen = 999)
-  fsc = read.csv(here::here(year, "data", "output", "fsh_length_comp.csv"))
+  fsc = vroom::vroom(here::here(year, "data", "output", "fsh_length_comp.csv"))
 
   fsc %>%
-    dplyr::select(n_s, n_h) %>%
+    tidytable::select(n_s, n_h) %>%
     t(.) %>%
     as.data.frame() %>%
     tibble::rownames_to_column("name") -> samps
 
   fsc %>%
-    dplyr::select(-n_s, -n_h, -SA_Index) %>%
-    tidyr::pivot_longer(-c(year)) %>%
-    tidyr::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
-    as.data.frame() %>%
-    dplyr::mutate_if(is.numeric, round, digits = 4) %>%
-    dplyr::mutate(name = gsub("X", "", name),
-                  name = ifelse(dplyr::row_number() == dplyr::n(), paste0(name, "+"), name )) %>%
-    dplyr::rename_all(~stringr::str_replace(., "y", "")) -> comp
+    tidytable::select(-n_s, -n_h, -SA_Index) %>%
+    tidytable::pivot_longer(-c(year)) %>%
+    tidytable::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
+    tidytable::mutate(tidytable::across(tidytable::where(is.numeric), round, digits=4)) %>%
+    tidytable::mutate(name = gsub("X", "", name),
+                      name = ifelse(tidytable::row_number() == tidytable::n(), paste0(name, "+"), name )) %>%
+    tidytable::rename_with(~stringr::str_replace(., "y", "")) -> comp
 
   names(samps) <- names(comp)
 
-  dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(model_dir, "tables", "fsc.csv"), row.names = FALSE)
+  tidytable::bind_rows(comp, samps) %>%
+    vroom::vroom_write(here::here(model_dir, "tables", "fsc.csv"), delim = ",")
 
 }
 
@@ -1060,28 +1073,27 @@ fsc_table <- function(year, model_dir){
 sac_table <- function(year, model_dir){
 
   options(scipen = 999)
-  fsc = read.csv(here::here(year, "data", "output", "goa_bts_age_comp.csv"))
+  fsc = vroom::vroom(here::here(year, "data", "output", "goa_bts_age_comp.csv"))
 
   fsc %>%
-    dplyr::select(n_s, n_h) %>%
+    tidytable::select(n_s, n_h) %>%
     t(.) %>%
     as.data.frame() %>%
     tibble::rownames_to_column("name") -> samps
 
   fsc %>%
-    dplyr::select(-n_s, -n_h, -AA_Index) %>%
-    tidyr::pivot_longer(-c(year)) %>%
-    tidyr::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
-    as.data.frame() %>%
-    dplyr::mutate_if(is.numeric, round, digits = 4) %>%
-    dplyr::mutate(name = gsub("X", "", name),
-                  name = ifelse(dplyr::row_number() == dplyr::n(), paste0(name, "+"), name )) %>%
-    dplyr::rename_all(~stringr::str_replace(., "y", "")) -> comp
+    tidytable::select(-n_s, -n_h, -AA_Index) %>%
+    tidytable::pivot_longer(-c(year)) %>%
+    tidytable::pivot_wider(names_from = year, values_from = value, names_prefix = "y") %>%
+    tidytable::mutate(tidytable::across(tidytable::where(is.numeric), round, digits=4)) %>%
+    tidytable::mutate(name = gsub("X", "", name),
+                      name = ifelse(tidytable::row_number() == tidytable::n(), paste0(name, "+"), name )) %>%
+    tidytable::rename_with(~stringr::str_replace(., "y", ""))  -> comp
 
   names(samps) <- names(comp)
 
-  dplyr::bind_rows(comp, samps) %>%
-    write.csv(here::here(model_dir, "tables", "sac.csv"), row.names = FALSE)
+  tidytable::bind_rows(comp, samps) %>%
+    vroom::vroom_write(here::here(model_dir, "tables", "sac.csv"), delim = ",")
 
 }
 
