@@ -6,18 +6,19 @@
 #' @param dat_name name of dat file e.g., goa_nr_2020
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
-#' @param mcmc number of mcmcs run
-#' @param mcsave the number of mcmcs saved
+#' @param mcmc was mcmc run? default = FALSE
+#' @param n_mcmc number of mcmcs run default 100000
+#' @param mcsave the number of mcmcs saved default 100
 #' @param len_bins file name (stored in the "user_input" folder) that has length bins
 #' @param ... future functions
 #'
 #' @return
 #' @export process_results
 #'
-#' @examples process_results (year = 2020, folder = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc = 1e+07, mcsave = 2000, len_bins = "lbins.csv")
+#' @examples process_results (year = 2020, folder = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc=FALSE, len_bins = "lbins.csv")
 #'
 process_results <- function(year, folder, model_name, dat_name,
-                            rec_age, plus_age, mcmc, mcsave, len_bins, ...){
+                            rec_age, plus_age, mcmc=FALSE, n_mcmc=100000, mcsave=100, len_bins, ...){
 
   # setup
   if (!dir.exists(here::here(year, folder, "processed"))){
@@ -70,38 +71,38 @@ process_results <- function(year, folder, model_name, dat_name,
     write.csv(here::here(year, folder, "processed", "ages_yrs.csv"), row.names = FALSE)
 
   # MCMC parameters ----
+  if(isTRUE(mcmc)) {
+    npar = readBin(PSV, what = integer(), n=1)
+    mcmcs = readBin(PSV, what = numeric(), n = (npar * mcmc / mcsave))
+    close(PSV)
+    mcmc_params = matrix(mcmcs, byrow=TRUE, ncol=npar)
+    # thin the string
+    mcmc_params = mcmc_params[501:nrow(mcmc_params),]
+    colnames(mcmc_params) = STD$name[1:ncol(mcmc_params)]
+    write.csv(mcmc_params, here::here(year, folder, "processed", "mcmc.csv"), row.names = FALSE)
 
-  npar = readBin(PSV, what = integer(), n=1)
-  mcmcs = readBin(PSV, what = numeric(), n = (npar * mcmc / mcsave))
-  close(PSV)
-  mcmc_params = matrix(mcmcs, byrow=TRUE, ncol=npar)
-  # thin the string
-  mcmc_params = mcmc_params[501:nrow(mcmc_params),]
-  colnames(mcmc_params) = STD$name[1:ncol(mcmc_params)]
-  write.csv(mcmc_params, here::here(year, folder, "processed", "mcmc.csv"), row.names = FALSE)
+    # mceval phase output ----
 
-  # mceval phase output ----
+    #Curry's Change
+    mceval = mceval[501:nrow(mceval),]
 
-  #Curry's Change
-  mceval = mceval[501:nrow(mceval),]
+    #Length colnames = 286
+    # columns mcmc_other = 271
 
-  #Length colnames = 286
-  # columns mcmc_other = 271
+    #1-8: Through objective function value
 
-  #1-8: Through objective function value
-
-  colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
-                       "ABC", "obj_fun",
-                       paste0("tot_biom_", yrs),
-                       paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
-                       paste0("spawn_biom_", yrs),
-                       "log_mean_rec",
-                       paste0("spawn_biom_proj_", max(yrs) + 1:15),
-                       paste0("pred_catch_proj_", max(yrs) + 1:15),
-                       paste0("rec_proj_", max(yrs) + 1:10),
-                       paste0("tot_biom_proj_", max(yrs)))
-  write.csv(mceval, here::here(year, folder, "processed", "mceval.csv"), row.names = FALSE)
-
+    colnames(mceval) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
+                         "ABC", "obj_fun",
+                         paste0("tot_biom_", yrs),
+                         paste0("log_rec_dev_", seq(styr_rec, yrs[length(yrs)])),
+                         paste0("spawn_biom_", yrs),
+                         "log_mean_rec",
+                         paste0("spawn_biom_proj_", max(yrs) + 1:15),
+                         paste0("pred_catch_proj_", max(yrs) + 1:15),
+                         paste0("rec_proj_", max(yrs) + 1:10),
+                         paste0("tot_biom_proj_", max(yrs)))
+    write.csv(mceval, here::here(year, folder, "processed", "mceval.csv"), row.names = FALSE)
+  }
   # catch data ----
 
   pred = base::strsplit(REP[grep("Pred_Catch", REP)], " ")
