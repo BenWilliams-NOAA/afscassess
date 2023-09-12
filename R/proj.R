@@ -71,9 +71,13 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
   if(dir.exists(here::here(year, folder, "proj", "apportionment")) == FALSE){
     dir.create(here::here(year, folder, "proj", "apportionment"), recursive = TRUE)
   }
-
+  if(dir.exists(here::here(year, folder, "proj", "author_f")) == FALSE){
     dir.create(here::here(year, folder, "proj", "author_f"))
+  }
+  if(dir.exists(here::here(year, folder, "proj", "max_f")) == FALSE){
     dir.create(here::here(year, folder, "proj", "max_f"))
+  }
+
 
   # 2 populate folders i.e. copy files
   file.copy(here::here(year, folder, "proj.dat"),
@@ -375,13 +379,12 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
     tidytable::left_join(data.frame(nat_mort) %>%
                            tidytable::slice(rep(1:n(), each = 2)) %>%
                            tidytable::rename(m = nat_mort) %>%
-                           tidytable::mutate(year = c(max(yr), max(yr) + 1),
+                           tidytable::mutate(year = c(max(yr) + 1, max(yr) + 2),
                                              blank = NA,
-                                             Status = year,
+                                             Status = c(max(yr), max(yr + 1)),
                                              Overfishing = NA,
                                              Overfished = NA,
-                                             `Approaching overfished` = NA,
-                                             id = 1:n())) %>%
+                                             `Approaching overfished` = NA)) %>%
     tidytable::select(`M (natural mortality)` = m,
                       Tier = tier,
                       tb_proj,
