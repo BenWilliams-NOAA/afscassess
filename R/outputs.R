@@ -1454,7 +1454,7 @@ process_results_pop <- function(year = 2023,
              fish2 = rep_item("Fishery_Selectivity_1977-1995"),
              fish3 = rep_item("Fishery_Selectivity_1996-2006"),
              fish4 = rep_item(paste0("Fishery_Selectivity_2007-", year)),
-             srv1 = rep_item("Trawl_Survey_Selectivity")) -> selex
+             srv1 = rep_item("Bottom_Trawl_Survey_Selectivity")) -> selex
   write.csv(selex, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
 
   # weight-at-age, maturity
