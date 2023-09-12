@@ -11,8 +11,8 @@
 #'
 #' @param year model year
 #' @param last_full_assess year that the last full assessment was done.
-#' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: year\alt
-#' @param folder folder that model is in, folder structure: year\alt\folder
+#' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'
+#' @param folder folder that model is in, folder structure: 'year\alt\folder'
 #' @param model_name name of the assessment model e.g., "m18.2" not the projection model, this is hopefully the same name as the folder...
 #' @param species e.g., "dusky"
 #' @param region e.g., "goa"
@@ -72,12 +72,15 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
     dir.create(here::here(year, folder, "proj", "apportionment"), recursive = TRUE)
   }
 
+    dir.create(here::here(year, folder, "proj", "author_f"))
+    dir.create(here::here(year, folder, "proj", "max_f"))
+
   # 2 populate folders i.e. copy files
   file.copy(here::here(year, folder, "proj.dat"),
             here::here(year, folder, "proj", "model", "data", paste0(species, ".dat")))
-  file.copy(system.file("tpl", c("proj.tpl", "proj.exe"), package = "projak"),
+  file.copy(system.file("tpl", c("main.tpl", "main.exe"), package = "afscassess"),
             here::here(year, folder, "proj", "model"))
-  file.copy(system.file("dat", "tacpar.dat", package = "projak"),
+  file.copy(system.file("dat", "tacpar.dat", package = "afscassess"),
             here::here(year, folder, "proj", "model"))
 
   # get data

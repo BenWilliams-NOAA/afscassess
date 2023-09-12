@@ -34,9 +34,9 @@ proj_ak(
 
 \item{last_full_assess}{year that the last full assessment was done.}
 
-\item{alt}{prefix folder structure e.g. "mgmt" - default = NULL folder structure: year\alt}
+\item{alt}{prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'}
 
-\item{folder}{folder that model is in, folder structure: year\alt\folder}
+\item{folder}{folder that model is in, folder structure: 'year\alt\folder'}
 
 \item{species}{e.g., "dusky"}
 
