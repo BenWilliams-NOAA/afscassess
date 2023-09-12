@@ -1026,7 +1026,7 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
 bts_length_comp <- function(year, area = "goa", sa_index, lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
 
-  read.csv(here::here(year, "data", "raw", "bts_length_data.csv")) %>%
+  read.csv(here::here(year, "data", "raw", "bts_sizecomp_data.csv")) %>%
     dplyr::rename_with(tolower) %>%
     tidytable::summarize(n_s = sum(frequency),
                          n_h = length(unique(hauljoin)),
