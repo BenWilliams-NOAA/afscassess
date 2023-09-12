@@ -1,14 +1,14 @@
-# Understanding proj (or not)
-
-# workflow:
-#   1. setup folders
-#   2. populate folders with "built in files"
-#   3. populate folders with assessment info
-#   4. run model
-#       a. max F output
-#       b. author F output
-#   5. compile and retrieve results
-
+#' Understanding proj (or not)
+#'
+#' workflow:
+#'   1. setup folders
+#'   2. populate folders with "built in files"
+#'   3. populate folders with assessment info
+#'   4. run model
+#'       a. max F output
+#'       b. author F output
+#'   5. compile and retrieve results
+#'
 #' @param year model year
 #' @param last_full_assess year that the last full assessment was done.
 #' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: year\alt
@@ -31,17 +31,17 @@
 #' @param abc_mult abc multiplier, default: 1
 #' @param pop_scalar population scalar, default: 1000
 #' @param tac_categories  default 1
-#' @param tac_models default 11
+#' @param tac_models default 1
 
-
-
-
+#' @export
 
 proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, rec_age = 2,
                     off_yr = FALSE, run_name = "Standard",
                     tac_abc = 1, srr = 1, rec_proj = 1, srr_cond = 0, srr_prior = 0,
                     nyrs_proj = 14, nsims = 1000, n_species = 1, abc_mult = 1, pop_scalar = 1000,
                     tac_categories = 1, tac_models = 1, admb_home = NULL) {
+
+
 
   # messages
   if(isTRUE(off_yr) & is.null(last_full_assess)) {
