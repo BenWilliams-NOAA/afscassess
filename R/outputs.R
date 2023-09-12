@@ -1461,7 +1461,7 @@ process_results_pop <- function(year = 2023,
   data.frame(age = ages,
              srv1 = rep_item("Weight"),
              maturity = rep_item("Maturity")) -> waa_mat
-  write.csv(waa_mat, paste0(model_dir, "/processed/selex.csv"), row.names = FALSE)
+  write.csv(waa_mat, paste0(model_dir, "/processed/waa_mat.csv"), row.names = FALSE)
 
   # number of parameters
 
