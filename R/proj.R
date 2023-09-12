@@ -375,7 +375,7 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
     tidytable::left_join(data.frame(nat_mort) %>%
                            tidytable::slice(rep(1:n(), each = 2)) %>%
                            tidytable::rename(m = nat_mort) %>%
-                           tidytable::mutate(year = c(max(yr) + 1, max(yr) + 2),
+                           tidytable::mutate(year = c(max(yr), max(yr) + 1),
                                              blank = NA,
                                              Status = year,
                                              Overfishing = NA,
