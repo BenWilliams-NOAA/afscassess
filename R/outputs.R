@@ -1103,7 +1103,7 @@ sac_table <- function(year, model_dir){
 ssc_table <- function(year, model_dir){
 
   options(scipen = 999)
-  fsc = read.csv(here::here(year, "data", "output", "goa_ts_length_comp.csv"))
+  fsc = read.csv(here::here(year, "data", "output", "goa_bts_length_comp.csv"))
 
   fsc %>%
     dplyr::select(n_s, n_h) %>%
@@ -1859,4 +1859,45 @@ process_results_pop <- function(year = 2023,
   }
 
   proc_res
+}
+
+#' @export correct_comps
+correct_comps <- function(year, model_dir = NULL, modname, dat_name,
+                          rec_age = 2, plus_age = 25, mcmc, mcsave, len_bins) {
+  rep_item <- function(name){
+    t <- strsplit(rep[grep(name, rep)]," ")
+    t <- subset(t[[1]], t[[1]]!="")
+    if(t[[1]][1] == "TWL"){
+      as.numeric(t[3:length(t)])
+    } else {
+      as.numeric(t[2:length(t)])
+    }
+  }
+  REP <- readLines(here::here(model_dir, folder, paste0(modname, ".rep")))
+  # comps ----
+
+  #! this will need a switch for multiple surveys
+
+  obs = REP[grep("Obs_P_fish_age",REP):(grep("Pred_P_fish_age",REP)-2)]
+  pred = REP[grep("Pred_P_fish_age",REP):(grep("Obs_P_fish_size",REP)-2)]
+
+  obs_l = REP[grep("Obs_P_fish_size",REP):(grep("Pred_P_fish_size",REP)-2)]
+  pred_l = REP[grep("Pred_P_fish_size",REP):(grep("Obs_P_srv1_age",REP)-2)]
+
+  s_obs = REP[grep("Obs_P_srv1_age",REP):(grep("Pred_P_srv1_age",REP)-2)]
+  s_pred = REP[grep("Pred_P_srv1_age",REP):(grep("Obs_P_srv1_size",REP)-2)]
+
+  s_obs_l = REP[grep("Obs_P_srv1_size",REP):(grep("Pred_P_srv1_size",REP)-2)]
+
+  afscassess::purrit(obs, pred, rec_age, plus_age, comp = "age", lenbins = lenbins) %>%
+    write.csv(here::here(year, folder, "processed", "fac.csv"))
+
+  afscassess::purrit(obs_l, pred_l, rec_age, plus_age, comp = "length", lenbins = lenbins) %>%
+    write.csv(here::here(year, folder, "processed", "fsc.csv"))
+
+  afscassess::purrit(s_obs, s_pred, rec_age, plus_age, comp = "age", lenbins = lenbins) %>%
+    write.csv(here::here(year, folder, "processed", "sac.csv"))
+
+  afscassess::purrit(s_obs_l, pred = NULL, rec_age, plus_age, comp = "length", lenbins = lenbins) %>%
+    write.csv(here::here(year, folder, "processed", "ssc.csv"))
 }
