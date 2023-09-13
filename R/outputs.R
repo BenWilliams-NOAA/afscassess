@@ -1087,12 +1087,14 @@ run_apport_pop <- function(year, model){
     tidytable::select(region, apport_corr, y1_corr, y2_corr) %>%
     tidytable::rename(apport = 'apport_corr',
                       y1 = 'y1_corr',
-                      y2 = 'y2_corr') %>%
+                      y2 = 'y2_corr') -> abc_apport1
+
+  abc_apport1 %>%
     tidytable::pivot_longer(-1) %>%
     tidytable::pivot_wider(names_from = region, values_from = value) %>%
     tidytable::mutate(goa = c(1, rec_table$abc[1], rec_table$abc[2])) -> abc_apport
 
-  abc_apport %>%
+  abc_apport1 %>%
     tidytable::filter(region == 'egoa') %>%
     tidytable::select(-apport) %>%
     tidytable::pivot_longer(cols = c(y1, y2),
