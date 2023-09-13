@@ -1023,13 +1023,6 @@ fish_length_comp_pop <- function(year, fishery = "fsh", rec_age, lenbins = NULL,
 #'
 bts_length_comp <- function(year, area = "goa", sa_index, lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
-
-  read.csv(here::here(year, "data", "raw", "bts_sizecomp_data.csv")) %>%
-    dplyr::rename_with(tolower) %>%
-    tidytable::summarize(n_s = sum(frequency),
-                         n_h = length(unique(hauljoin)),
-                         .by = c(year))-> df
-
   if(is.null(lenbins)){
     stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
   }
@@ -1046,7 +1039,7 @@ bts_length_comp <- function(year, area = "goa", sa_index, lenbins = NULL, bysex 
 
   if(!is.null(bysex)){
     # note that this code needs to still be changed to have column names consistent with gap_products
-    df %>%
+    dat %>%
       dplyr::rename_with(tolower) %>%
       dplyr::filter(summary_depth < 995, year != 2001) %>%
       tidyr::pivot_longer(cols = c(males, females, unsexed)) %>%
