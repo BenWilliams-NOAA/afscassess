@@ -1038,9 +1038,9 @@ run_apport_pop <- function(year, model){
 
   apport_plots <- rema::plot_rema(tidy_rema = apport_out, biomass_ylab = 'Biomass (t)') # optional y-axis label
 
-  ggplot2::ggsave(apport_plots$biomass_by_strata,
-                  file = here::here(year, "mgmt", model, 'apport','rema_outs.png'),
-                  width = 12, height = 10, unit = 'in', dpi = 520)
+  suppressWarnings(ggplot2::ggsave(apport_plots$biomass_by_strata,
+                                   file = here::here(year, "mgmt", model, 'apport','rema_outs.png'),
+                                   width = 12, height = 10, unit = 'in', dpi = 520))
 
   # compute wyak/eyak-se split
 
@@ -1068,9 +1068,26 @@ run_apport_pop <- function(year, model){
     tidytable::pivot_longer(cols = c(cgoa, egoa, wgoa),
                             names_to = 'region',
                             values_to = 'apport') %>%
-    tidytable::mutate(y1 = rec_table$abc[1] * apport,
-                      y2 = rec_table$abc[2] * apport) %>%
-    tidytable::select(-year) -> abc_apport
+    tidytable::mutate(apport = round(apport, digits = 3),
+                      diff = 1 - sum(apport)) %>%
+    tidytable::mutate(apport_corr = case_when(max(diff) > 0 ~ case_when(region == 'cgoa' ~ apport + diff,
+                                                                        region != 'cgoa' ~ apport),
+                                              max(diff) == 0 ~ apport)) %>%  # if rounding error happens, add to cgoa
+    tidytable::select(year, region, apport_corr) %>%
+    tidytable::mutate(y1 = round(rec_table$abc[1] * apport_corr, digits = 0),
+                      y2 = round(rec_table$abc[2] * apport_corr, digits = 0),
+                      diff_y1 = rec_table$abc[1] - sum(y1),
+                      diff_y2 = rec_table$abc[2] - sum(y2)) %>%
+    tidytable::mutate(y1_corr = case_when(max(diff_y1) > 0 ~ case_when(region == 'cgoa' ~ y1 + diff_y1,
+                                                                       region != 'cgoa' ~ y1),
+                                          max(diff_y1) == 0 ~ y1),
+                      y2_corr = case_when(max(diff_y2) > 0 ~ case_when(region == 'cgoa' ~ y2 + diff_y2,
+                                                                       region != 'cgoa' ~ y2),
+                                          max(diff_y2) == 0 ~ y2)) %>%  # if rounding error happens, add to cgoa
+    tidytable::select(region, apport_corr, y1_corr, y2_corr) %>%
+    tidytable::rename(apport = 'apport_corr',
+                      y1 = 'y1_corr',
+                      y2 = 'y2_corr') -> abc_apport
 
   abc_apport %>%
     tidytable::filter(region == 'egoa') %>%
@@ -1078,24 +1095,30 @@ run_apport_pop <- function(year, model){
     tidytable::pivot_longer(cols = c(y1, y2),
                             names_to = 'year',
                             values_to = 'abc') %>%
-    tidytable::mutate(wyak = wyak_p$wyak * abc,
-                      eyak_se = (1 - wyak_p$wyak) * abc) %>%
-    tidytable::select(-region) %>%
+    tidytable::mutate(wyak = round(wyak_p$wyak * abc, digits = 0),
+                      eyak_se = round((1 - wyak_p$wyak) * abc, digits = 0),
+                      diff = abc - (wyak + eyak_se),
+                      wyak_corr = wyak + diff) %>% # if difference in rounding, add (or take out) from wyak
+    tidytable::select(year, abc, wyak_corr, eyak_se) %>%
+    tidytable::rename(wyak = 'wyak_corr') %>%
     tidytable::mutate(wyak_p = wyak_p$wyak) -> abc_apport_wyak
 
   # ofl
-  apport_out$proportion_biomass_by_strata %>%
-    tidytable::filter(year == max(year)) %>%
-    tidytable::select(-model_name) %>%
-    tidytable::rename(cgoa = 'CENTRAL GOA',
-                      egoa = 'EASTERN GOA',
-                      wgoa = 'WESTERN GOA') %>%
-    tidytable::pivot_longer(cols = c(cgoa, egoa, wgoa),
-                            names_to = 'region',
-                            values_to = 'apport') %>%
-    tidytable::mutate(y1 = rec_table$ofl[1] * apport,
-                      y2 = rec_table$ofl[2] * apport) %>%
-    tidytable::select(-year) -> ofl_apport1
+  abc_apport %>%
+    tidytable::select(region, apport) %>%
+    tidytable::mutate(y1 = round(rec_table$ofl[1] * apport, digits = 0),
+                      y2 = round(rec_table$ofl[2] * apport, digits = 0),
+                      diff_y1 = rec_table$ofl[1] - sum(y1),
+                      diff_y2 = rec_table$ofl[2] - sum(y2)) %>%
+    tidytable::mutate(y1_corr = case_when(max(diff_y1) > 0 ~ case_when(region == 'cgoa' ~ y1 + diff_y1,
+                                                                       region != 'cgoa' ~ y1),
+                                          max(diff_y1) == 0 ~ y1),
+                      y2_corr = case_when(max(diff_y2) > 0 ~ case_when(region == 'cgoa' ~ y2 + diff_y2,
+                                                                       region != 'cgoa' ~ y2),
+                                          max(diff_y2) == 0 ~ y2)) %>%  # if rounding error happens, add to cgoa
+    tidytable::select(region, apport, y1_corr, y2_corr) %>%
+    tidytable::rename(y1 = 'y1_corr',
+                      y2 = 'y2_corr') -> ofl_apport1
 
   ofl_apport1 %>%
     tidytable::filter(region == 'egoa') %>%
@@ -1103,9 +1126,13 @@ run_apport_pop <- function(year, model){
     tidytable::pivot_longer(cols = c(y1, y2),
                             names_to = 'year',
                             values_to = 'ofl') %>%
-    tidytable::mutate(wyak = wyak_p$wyak * ofl,
-                      eyak_se = (1 - wyak_p$wyak) * ofl) %>%
-    tidytable::select(-region, -ofl) %>%
+    tidytable::mutate(wyak = round(wyak_p$wyak * ofl, digits = 0),
+                      eyak_se = round((1 - wyak_p$wyak) * ofl, digits = 0),
+                      diff = ofl - (wyak + eyak_se),
+                      wyak_corr = wyak + diff) %>% # if difference in rounding, add (or take out) from wyak
+    tidytable::select(year, ofl, wyak_corr, eyak_se) %>%
+    tidytable::rename(wyak = 'wyak_corr') %>%
+    tidytable::select(-ofl) %>%
     tidytable::bind_cols(ofl_apport1 %>%
                            tidytable::filter(region != 'egoa') %>%
                            tidytable::select(-apport) %>%
@@ -1124,23 +1151,6 @@ run_apport_pop <- function(year, model){
   write.csv(ofl_apport, here::here(year, 'mgmt', model, 'processed', 'ofl_apport.csv'))
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #' @param year  assessment year
