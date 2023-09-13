@@ -509,8 +509,7 @@ size_at_age_pop_60 <- function(year, rec_age, lenbins = NULL){
                   prob = ifelse(length == min(length),
                                 pnorm(length + 0.5, lbar, sd_lbar),
                                 pnorm(length + 0.5, lbar, sd_lbar) -
-                                  pnorm(length -0.5, lbar, sd_lbar)),
-                  prob = round(prob, digits = 4)) %>%
+                                  pnorm(length -0.5, lbar, sd_lbar))) %>%
     dplyr::select(age, length, prob) %>%
     tidyr::pivot_wider(names_from = length, values_from = prob) %>%
     dplyr::mutate(!!rev(names(.))[1] := 1 - rowSums(.[2:(ncol(.) - 1)])) %>%
