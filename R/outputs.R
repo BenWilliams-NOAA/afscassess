@@ -1109,7 +1109,7 @@ run_apport_pop <- function(year, model){
     tidytable::mutate(wyak_p = wyak_p$wyak) -> abc_apport_wyak
 
   # ofl
-  abc_apport %>%
+  abc_apport1 %>%
     tidytable::select(region, apport) %>%
     tidytable::mutate(y1 = round(rec_table$ofl[1] * apport, digits = 0),
                       y2 = round(rec_table$ofl[2] * apport, digits = 0),
