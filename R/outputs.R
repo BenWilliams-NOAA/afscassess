@@ -1080,7 +1080,8 @@ run_apport_pop <- function(year, model){
                             values_to = 'abc') %>%
     tidytable::mutate(wyak = wyak_p$wyak * abc,
                       eyak_se = (1 - wyak_p$wyak) * abc) %>%
-    tidytable::select(-region) -> abc_apport_wyak
+    tidytable::select(-region) %>%
+    tidytable::mutate(wyak_p = wyak_p$wyak) -> abc_apport_wyak
 
   # ofl
   apport_out$proportion_biomass_by_strata %>%
