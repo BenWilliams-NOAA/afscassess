@@ -1007,6 +1007,141 @@ run_proj <- function(st_year, spec, model, on_year = TRUE){
 
 }
 
+#' @param year assessment year
+#' @param model name of current model that is to be apportioned
+#' @export run_apport_pop
+
+run_apport_pop <- function(year, model){
+
+  if (!dir.exists(here::here(year, "mgmt", model, "apport"))){
+    dir.create(here::here(year, "mgmt", model, "apport"), recursive=TRUE)
+  }
+
+  # run rema model for e/c/wgoa, save output and plots into 'apport' folder
+  biomass_dat <- read.csv(here(year,'data','raw','goa_area_bts_biomass_data.csv')) %>% # use area-specific dataframe
+    tidytable::mutate(sd = sqrt(biomass_var),
+                      cv = sd / area_biomass) %>%
+    tidytable::select(strata = regulatory_area_name,
+                      year,
+                      biomass = area_biomass,
+                      cv) %>%
+    tidytable::filter(year >= 1990) # biomass data with dimensions strata, year, biomass, cvs (not logged)
+
+  apport_in <- rema::prepare_rema_input(model_name = paste0("TMB: GOA POP MULTIVAR"),
+                                        biomass_dat  = bind_rows(biomass_dat))
+
+  apport_mdl <- rema::fit_rema(apport_in)
+
+  apport_out <- rema::tidy_rema(rema_model = apport_mdl)
+
+  save(apport_out, file = here::here(year, "mgmt", model, 'apport', paste0(Sys.Date(),'-rema_output.rdata')))
+
+  apport_plots <- rema::plot_rema(tidy_rema = apport_out, biomass_ylab = 'Biomass (t)') # optional y-axis label
+
+  ggplot2::ggsave(apport_plots$biomass_by_strata,
+                  file = here::here(year, "mgmt", model, 'apport','rema_outs.png'),
+                  width = 12, height = 10, unit = 'in', dpi = 520)
+
+  # compute wyak/eyak-se split
+
+  vroom::vroom(here::here(year,'data','raw','goa_biomass_fractions_egoa.csv')) %>%  # copied values from 2021 assessment, need to set up a query for this
+    tidytable::select(Year, 'Western Fraction') %>%
+    tidytable::rename(year = Year,
+                      wfrac = 'Western Fraction') %>%
+    tidytable::filter(year >= max(year) - 4) %>%
+    tidytable::mutate(wt = c(4, 6, 9),
+                      wtd_var = (wt / sum(wt)) ^ 2 * var(wfrac)) %>%
+    tidytable::summarise(sum_wtd_var = sum(wtd_var),
+                         wtd_avg = sum(wfrac * wt) / sum(wt)) %>%
+    tidytable::mutate(wyak = round(wtd_avg + 2 * sqrt(sum_wtd_var), digits = 2)) -> wyak_p
+
+  # make apportionment tables
+  rec_table <- vroom::vroom(here::here(year, 'mgmt', model, 'processed', 'exec_summ.csv'))
+
+  # abc
+  apport_out$proportion_biomass_by_strata %>%
+    tidytable::filter(year == max(year)) %>%
+    tidytable::select(-model_name) %>%
+    tidytable::rename(cgoa = 'CENTRAL GOA',
+                      egoa = 'EASTERN GOA',
+                      wgoa = 'WESTERN GOA') %>%
+    tidytable::pivot_longer(cols = c(cgoa, egoa, wgoa),
+                            names_to = 'region',
+                            values_to = 'apport') %>%
+    tidytable::mutate(y1 = rec_table$abc[1] * apport,
+                      y2 = rec_table$abc[2] * apport) %>%
+    tidytable::select(-year) -> abc_apport
+
+  abc_apport %>%
+    tidytable::filter(region == 'egoa') %>%
+    tidytable::select(-apport) %>%
+    tidytable::pivot_longer(cols = c(y1, y2),
+                            names_to = 'year',
+                            values_to = 'abc') %>%
+    tidytable::mutate(wyak = wyak_p$wyak * abc,
+                      eyak_se = (1 - wyak_p$wyak) * abc) %>%
+    tidytable::select(-region) -> abc_apport_wyak
+
+  # ofl
+  apport_out$proportion_biomass_by_strata %>%
+    tidytable::filter(year == max(year)) %>%
+    tidytable::select(-model_name) %>%
+    tidytable::rename(cgoa = 'CENTRAL GOA',
+                      egoa = 'EASTERN GOA',
+                      wgoa = 'WESTERN GOA') %>%
+    tidytable::pivot_longer(cols = c(cgoa, egoa, wgoa),
+                            names_to = 'region',
+                            values_to = 'apport') %>%
+    tidytable::mutate(y1 = rec_table$ofl[1] * apport,
+                      y2 = rec_table$ofl[2] * apport) %>%
+    tidytable::select(-year) -> ofl_apport1
+
+  ofl_apport1 %>%
+    tidytable::filter(region == 'egoa') %>%
+    tidytable::select(-apport) %>%
+    tidytable::pivot_longer(cols = c(y1, y2),
+                            names_to = 'year',
+                            values_to = 'ofl') %>%
+    tidytable::mutate(wyak = wyak_p$wyak * ofl,
+                      eyak_se = (1 - wyak_p$wyak) * ofl) %>%
+    tidytable::select(-region, -ofl) %>%
+    tidytable::bind_cols(ofl_apport1 %>%
+                           tidytable::filter(region != 'egoa') %>%
+                           tidytable::select(-apport) %>%
+                           tidytable::pivot_longer(cols = c(y1, y2),
+                                                   names_to = 'year',
+                                                   values_to = 'ofl') %>%
+                           tidytable::pivot_wider(names_from = region, values_from = ofl) %>%
+                           tidytable::select(-year)) %>%
+    tidytable::mutate(ofl_wcgoa_wyak = wyak + cgoa + wgoa,
+                      ofl_eyak_se = eyak_se,
+                      ofl = c(rec_table$ofl[1], rec_table$ofl[2])) %>%
+    tidytable::select(year, ofl_wcgoa_wyak, ofl_eyak_se, ofl) -> ofl_apport
+
+  write.csv(abc_apport, here::here(year, 'mgmt', model, 'processed', 'abc_apport.csv'))
+  write.csv(abc_apport_wyak, here::here(year, 'mgmt', model, 'processed', 'abc_apport_wyak.csv'))
+  write.csv(ofl_apport, here::here(year, 'mgmt', model, 'processed', 'ofl_apport.csv'))
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #' @param year  assessment year
 #' @param model_dir   directory of model being evaluated (folder name)
 #' @export fac_table
