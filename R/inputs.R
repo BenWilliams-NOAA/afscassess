@@ -247,7 +247,7 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
                 sep="", quote=F, row.names=F, col.names=F)
 
   setwd(here::here(year, "data", "models", "ageage"))
-  R2admb::compile_admb("ageage", verbose = TRUE)
+  # R2admb::compile_admb("ageage", verbose = TRUE)
   R2admb::run_admb("ageage", verbose=TRUE)
 
   setwd(here::here())
@@ -411,7 +411,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
     paste(laa_stats$SD_Lbar, collapse=" ")) %>%
     write.table("vbl.dat", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
-  R2admb::compile_admb("vbl", verbose = TRUE)
+  # R2admb::compile_admb("vbl", verbose = TRUE)
   R2admb::run_admb("vbl", verbose = TRUE)
 
   # retrieve output
@@ -437,7 +437,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
     write.table("lengthsd.dat", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
 
-  R2admb::compile_admb("lengthsd", verbose = TRUE)
+  # R2admb::compile_admb("lengthsd", verbose = TRUE)
   R2admb::run_admb("lengthsd", verbose = TRUE)
   STD <- read.delim("lengthsd.std", sep="")
   a <- STD$value[1]
@@ -1291,7 +1291,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
   # run model
 
-  R2admb::compile_admb("allometric", verbose = TRUE)
+  # R2admb::compile_admb("allometric", verbose = TRUE)
   R2admb::run_admb("allometric", verbose = TRUE)
   par = readLines("allometric.par", warn = FALSE)
   alpha_lw = as.numeric(strsplit(par[grep("alpha", par) + 1]," ")[[1]])
@@ -1333,7 +1333,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
   # run model
 
-  R2admb::compile_admb("wvbl", verbose = TRUE)
+  # R2admb::compile_admb("wvbl", verbose = TRUE)
   R2admb::run_admb("wvbl", verbose = TRUE)
 
   REP <- readLines("wvbl.rep", warn=FALSE)
