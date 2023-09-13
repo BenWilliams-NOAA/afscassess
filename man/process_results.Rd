@@ -6,13 +6,14 @@
 \usage{
 process_results(
   year,
-  model,
+  folder,
   model_name,
   dat_name,
   rec_age,
   plus_age,
-  mcmc,
-  mcsave,
+  mcmc = FALSE,
+  n_mcmc = 1e+05,
+  mcsave = 100,
   len_bins,
   ...
 )
@@ -20,9 +21,9 @@ process_results(
 \arguments{
 \item{year}{assessment year}
 
-\item{model}{model being evaluated (folder name)}
+\item{folder}{model being evaluated (folder name)}
 
-\item{model_name}{name of the model e.g., updated_nr}
+\item{model_name}{name of the folder e.g., updated_nr}
 
 \item{dat_name}{name of dat file e.g., goa_nr_2020}
 
@@ -30,9 +31,11 @@ process_results(
 
 \item{plus_age}{plus age group}
 
-\item{mcmc}{number of mcmcs run}
+\item{mcmc}{was mcmc run? default = FALSE}
 
-\item{mcsave}{the number of mcmcs saved}
+\item{n_mcmc}{number of mcmcs run default 100000}
+
+\item{mcsave}{the number of mcmcs saved default 100}
 
 \item{len_bins}{file name (stored in the "user_input" folder) that has length bins}
 
@@ -42,6 +45,6 @@ process_results(
 Process model results for tables and figs
 }
 \examples{
-process_results (year = 2020, model = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc = 1e+07, mcsave = 2000, len_bins = "lbins.csv")
+process_results (year = 2020, folder = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc=FALSE, len_bins = "lbins.csv")
 
 }

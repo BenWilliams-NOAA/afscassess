@@ -10,7 +10,7 @@
 #'   5. compile and retrieve results
 #'
 #' @param year model year
-#' @param last_full_assess year that the last full assessment was done.
+#' @param last_full_assess year of the last full assessment, default: NULL
 #' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'
 #' @param folder folder that model is in, folder structure: 'year\alt\folder'
 #' @param model_name name of the assessment model e.g., "m18.2" not the projection model, this is hopefully the same name as the folder...
@@ -35,7 +35,7 @@
 
 #' @export
 
-proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, rec_age = 2,
+proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, region, rec_age = 2,
                     off_yr = FALSE, run_name = "Standard",
                     tac_abc = 1, srr = 1, rec_proj = 1, srr_cond = 0, srr_prior = 0,
                     nyrs_proj = 14, nsims = 1000, n_species = 1, abc_mult = 1, pop_scalar = 1000,
@@ -69,13 +69,16 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
     dir.create(here::here(year, folder, "proj", "model", "data"), recursive = TRUE)
   }
   if(dir.exists(here::here(year, folder, "proj", "apportionment")) == FALSE){
-    dir.create(here::here(year, folder, "proj", "apportionment"), recursive = TRUE)
+    dir.create(here::here(year, folder, "proj", "apportionment"))
   }
   if(dir.exists(here::here(year, folder, "proj", "author_f")) == FALSE){
     dir.create(here::here(year, folder, "proj", "author_f"))
   }
   if(dir.exists(here::here(year, folder, "proj", "max_f")) == FALSE){
     dir.create(here::here(year, folder, "proj", "max_f"))
+  }
+  if(dir.exists(here::here(year, folder, "processed")) == FALSE){
+    dir.create(here::here(year, folder, "processed"), recursive = TRUE)
   }
 
 
@@ -309,8 +312,8 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
                       avg5f = 1000 * avg5f,
                       nof = 1000 * nof,
                       overf = 1000 * overf,
-                      appoverf = 1000 * appoverf) -> mscen_ssb
-  vroom::vroom_write(mscen_ssb, here::here(year, folder, "processed", "mscen_ssb.csv"), delim = ",")
+                      appoverf = 1000 * appoverf) %>%
+  vroom::vroom_write(here::here(year, folder, "processed", "mscen_ssb.csv"), delim = ",")
 
   # fishing mortality
   mscen_tbl(maxf, authf, start = "Fishing_mortality", end = "Total_Biomass") %>%
@@ -320,8 +323,8 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
                       avg5f = round(avg5f, digits = 3),
                       nof = round(nof, digits = 3),
                       overf = round(overf, digits = 3),
-                      appoverf = round(appoverf, digits = 3)) -> mscen_f
-  vroom::vroom_write(mscen_f, here::here(year, folder, "processed", "mscen_f.csv"), delim = ",")
+                      appoverf = round(appoverf, digits = 3)) %>%
+  vroom::vroom_write(here::here(year, folder, "processed", "mscen_f.csv"), delim = ",")
 
   # yield
   mscen_tbl(maxf, authf, start = "Catch", end = "Spawning_Biomass", catch = TRUE) %>%
@@ -331,8 +334,8 @@ proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, r
                       avg5f = 1000 * avg5f,
                       nof = 1000 * nof,
                       overf = 1000 * overf,
-                      appoverf = 1000 * appoverf) -> mscen_yld
-  vroom::vroom_write(mscen_yld, here::here(year, folder, "processed", "mscen_yld.csv"), delim = ",")
+                      appoverf = 1000 * appoverf)  %>%
+  vroom::vroom_write(here::here(year, folder, "processed", "mscen_yld.csv"), delim = ",")
 
   # get executive summary table
 

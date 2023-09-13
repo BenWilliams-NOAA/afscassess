@@ -4,16 +4,28 @@
 \alias{size_at_age}
 \title{size at age analysis}
 \usage{
-size_at_age(year, admb_home = NULL, rec_age, lenbins = NULL, save = TRUE)
+size_at_age(
+  year,
+  area,
+  admb_home = NULL,
+  rec_age,
+  lenbins = NULL,
+  alt = NULL,
+  save = TRUE
+)
 }
 \arguments{
 \item{year}{analysis year}
+
+\item{area}{area data are from e.g., "goa"}
 
 \item{admb_home}{location admb exists on your computer}
 
 \item{rec_age}{recruitment age}
 
 \item{lenbins}{length bin file}
+
+\item{alt}{#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder}
 
 \item{save}{save in the default location}
 

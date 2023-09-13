@@ -6,7 +6,7 @@
 \usage{
 proj_ak(
   year,
-  last_full_assess,
+  last_full_assess = NULL,
   alt = NULL,
   folder,
   species,
@@ -32,7 +32,7 @@ proj_ak(
 \arguments{
 \item{year}{model year}
 
-\item{last_full_assess}{year that the last full assessment was done.}
+\item{last_full_assess}{year of the last full assessment, default: NULL}
 
 \item{alt}{prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'}
 

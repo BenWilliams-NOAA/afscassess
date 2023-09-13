@@ -10,7 +10,7 @@ fish_age_comp(
   rec_age,
   plus_age,
   rmv_yrs = NULL,
-  alt = NULL,
+  id = NULL,
   save = TRUE
 )
 }
@@ -25,7 +25,7 @@ fish_age_comp(
 
 \item{rmv_yrs}{any years to remove form the age comp e.g. c(1987, 1989)}
 
-\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+\item{id}{id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_age_comp-use.csv' in the data/output folder}
 
 \item{save}{whether to save the file - wll be placed in "year/data/output" folder}
 }
