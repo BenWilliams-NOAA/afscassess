@@ -167,9 +167,9 @@ bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs 
   }
 
     if(!is.null(id) & isTRUE(save)){
-    vroom::vroom_write(sb, here::here(year, "data", paste0(area, "_", type, "_bts_biomass_", id,".csv")), ",")
+    vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_", type, "_bts_biomass_", id,".csv")), ",")
     } else if(is.null(id) & isTRUE(save)){
-      vroom::vroom_write(sb, here::here(year, "data", paste(area, type, "bts_biomass.csv", sep="_")), ",")
+      vroom::vroom_write(sb, here::here(year, "data", "output", paste(area, type, "bts_biomass.csv", sep="_")), ",")
       sb
     } else
     sb
