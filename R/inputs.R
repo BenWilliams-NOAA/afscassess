@@ -115,26 +115,25 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
 #' survey biomass
 #'
-#' @param year of interest
+#' @param year model year
 #' @param area options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area
 #' @param type "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
-#' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")
+#' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv") which is stored in "data/user_input"
 #' @param rmv_yrs any survey years to exclude
-#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
-#' @param save save to default location
+#' @param save save to default location, default: TRUE
+#' @param id identifier will be appended to file name - "bts_biomass_vast, default:NULL
 #'
 #' @return
 #' @export bts_biomass
 #'
 #' @examples
 #'
-bts_biomass <- function(year, area = "goa", type = "total", file = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
+bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs = NULL, save = TRUE, id = NULL){
 
   area = tolower(area)
   type = tolower(type)
 
   if(is.null(file)){
-
     vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", type, "_bts_biomass_data.csv"))) %>%
       dplyr::rename_with(tolower)  -> df
 
@@ -167,17 +166,13 @@ bts_biomass <- function(year, area = "goa", type = "total", file = NULL, rmv_yrs
     sb <- dplyr::filter(sb, !(year %in% rmv_yrs))
   }
 
-  if(!(is.null(alt))) {
-    vroom::vroom_write(sb, here::here(year, alt, "data", paste(area, type, "bts_biomass.csv", sep="_")), ",")
+    if(!is.null(id) & isTRUE(save)){
+    vroom::vroom_write(sb, here::here(year, "data", paste0(area, "_", type, "_bts_biomass_", id,".csv")), ",")
+    } else if(is.null(id) & isTRUE(save)){
+      vroom::vroom_write(sb, here::here(year, "data", paste(area, type, "bts_biomass.csv", sep="_")), ",")
+      sb
+    } else
     sb
-  } else if(isTRUE(save)){
-    vroom::vroom_write(sb, here::here(year, "data", "output", paste(area, type, "bts_biomass.csv", sep="_")), delim=",")
-  } else {
-    sb
-  }
-
-
-
 
 }
 
