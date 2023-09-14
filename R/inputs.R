@@ -57,7 +57,9 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 
   # Fishery catch data ----
   vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
-  vroom::vroom(here::here(year, "data", "raw",  "fsh_obs_data.csv")) -> obs_data
+  vroom::vroom(here::here(year, "data", "raw", "fsh_obs_data.txt"),
+               delim = ",",
+               col_type = c(join_key = "c", haul_join = "c")) -> obs_data
 
   # Estimate catch ratio in final year to end of year
   obs_data %>%
