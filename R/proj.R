@@ -81,10 +81,14 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
     dir.create(here::here(year, folder, "processed"), recursive = TRUE)
   }
 
-
   # 2 populate folders i.e. copy files
+  if(isTRUE(off_yr)) {
+    file.copy(here::here(year, "base", "proj.dat"),
+              here::here(year, folder, "proj", "model", "data", paste0(species, ".dat")))
+  } else {
   file.copy(here::here(year, folder, "proj.dat"),
             here::here(year, folder, "proj", "model", "data", paste0(species, ".dat")))
+  }
   file.copy(system.file("tpl", c("main.tpl", "main.exe"), package = "afscassess"),
             here::here(year, folder, "proj", "model"))
   file.copy(system.file("dat", "tacpar.dat", package = "afscassess"),
