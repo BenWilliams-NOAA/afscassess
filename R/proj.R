@@ -338,84 +338,89 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
 
   # get executive summary table
 
-  # projected total biomass
-  data.frame(stringr::str_split_fixed(authf[(grep("Total_Biomass", authf)[1] + 2):
-                                              (grep("Catch", authf)[3] - 2)], " ", n = 14)) %>%
-    tidytable::select(year = X1, tb_proj = X7) %>%
-    tidytable::filter(year %in% c(max(yr) + 1, max(yr) + 2)) %>%
-    #projected spawning biomass
-    tidytable::left_join(
-      data.frame(stringr::str_split_fixed(authf[(grep("Spawning_Biomass", authf)[1] + 2):
-                                                  (grep("Fishing_mortality", authf)[1] - 2)], " ", n = 14)) %>%
-        tidytable::select(year = X1, ssb_proj = X7) %>%
-        tidytable::filter(year %in% c(max(yr) + 1, max(yr) + 2))) %>%
-    # B0, 40, 35
-    tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("SB0", authf) + 1)], " ", n = 6)) %>%
-                           tidytable::select(sb0 = X1, sb40 = X2, sb35 = X3) %>%
-                           tidytable::slice(rep(1:n(), each = 2)) %>%
-                           tidytable::mutate(year = as.character(c(max(yr)+1, max(yr+2))))) %>%
-    tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric),
-                      tidytable::across(c(tidytable::where(is.numeric), -year), ~round(.x * 1000))) %>%
-    # f_ofl and f_abc
-    tidytable::mutate(f_ofl = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3),
-                                                   ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3)),
-                      maxf_abc = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3),
-                                                      ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3)),
-                      f_abc = maxf_abc,
-                      tier = tidytable::case_when(ssb_proj > sb40 ~ "3a",
-                                                  ssb_proj < sb40 ~ "3b"),
-                      .by = year) %>%
-    # ofl and abc
-    tidytable::left_join(auth_bs %>%
-                           tidytable::filter(alt == 1) %>%
-                           tidytable::select(year, ofl, abc) %>%
-                           tidytable::filter(year %in% c(max(yr) + 1, max(yr) + 2)) %>%
-                           tidytable::mutate(ofl = round(ofl * 1000),
-                                             maxabc = round(abc * 1000),
-                                             abc = maxabc)) %>%
-    # natural mortality
-    tidytable::left_join(data.frame(nat_mort) %>%
-                           tidytable::slice(rep(1:n(), each = 2)) %>%
-                           tidytable::rename(m = nat_mort) %>%
-                           tidytable::mutate(year = c(max(yr) + 1, max(yr) + 2),
-                                             blank = NA,
-                                             Status = c(max(yr), max(yr + 1)),
-                                             Overfishing = NA,
-                                             Overfished = NA,
-                                             `Approaching overfished` = NA)) %>%
-    tidytable::select(`M (natural mortality)` = m,
-                      Tier = tier,
-                      tb_proj,
-                      `Projected female spawning biomass (t)` = ssb_proj,
-                      `B100%` = sb0,
-                      `B40%` = sb40,
-                      `B35%` = sb35,
-                      FOFL = f_ofl,
-                      maxFABC = maxf_abc,
-                      FABC = f_abc,
-                      `OFL (t)` = ofl,
-                      `maxABC (t)` = maxabc,
-                      `ABC (t)` = maxabc,
-                      blank,
-                      Status,
-                      Overfishing,
-                      Overfished,
-                      `Approaching overfished`) %>%
-    t() %>%
-    as.data.frame() %>%
-    tibble::rownames_to_column("item")  %>%
-    tidytable::rename(y3 = V1, y4 = V2) %>%
-    tidytable::mutate(item = ifelse(item == "tb_proj",
-                                    paste0("Projected total (age ", rec_age,"+) biomass (t)"),
-                                    item)) -> exec_summ
+# projected total biomass
+data.frame(stringr::str_split_fixed(authf[(grep("Total_Biomass", authf)[1] + 2):
+                                            (grep("Catch", authf)[3] - 2)], " ", n = 14)) %>%
+  tidytable::select(year = X1, tb_proj = X7) %>%
+  # tidytable::filter(year %in% c(max(yr) + 1, max(yr) + 2)) %>%
+  #projected spawning biomass
+  tidytable::left_join(
+    data.frame(stringr::str_split_fixed(authf[(grep("Spawning_Biomass", authf)[1] + 2):
+                                                (grep("Fishing_mortality", authf)[1] - 2)], " ", n = 14)) %>%
+      tidytable::select(year = X1, ssb_proj = X7)) %>%
+  # B0, 40, 35
+  tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("SB0", authf) + 1)], " ", n = 6)) %>%
+                         tidytable::select(sb0 = X1, sb40 = X2, sb35 = X3) %>%
+                         tidytable::slice(rep(1:n(), each = 2)) %>%
+                         tidytable::mutate(year = as.character(c(max(yr)+1, max(yr+2))))) %>%
+  tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric),
+                    tidytable::across(c(tidytable::where(is.numeric), -year), ~round(.x * 1000))) %>% 
+  tidytable::drop_na() %>% 
+  # f_ofl and f_abc
+  tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("Fishing_mortality", authf)[1]+2):
+                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>% 
+                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>% 
+                         tidytable::select(year = X1, f_ofl = X5)) %>%
+  tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("Fishing_mortality", authf)[1]+2):
+                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>% 
+                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>% 
+                         tidytable::select(year = X1, maxf_abc = X4)) %>%
+  tidytable::mutate(f_ofl = round(ifelse(ssb_proj < sb40, (ssb_proj / sb40 - 0.05) / 0.95 * f_ofl, f_ofl), 3),
+                    maxf_abc = round(ifelse(ssb_proj < sb40, (ssb_proj / sb40 - 0.05) / 0.95 * maxf_abc, maxf_abc), 3),
+                    f_abc = maxf_abc,
+                    tier = tidytable::case_when(ssb_proj > sb40 ~ "3a",
+                                                ssb_proj < sb40 ~ "3b")) %>% 
+  # ofl and abc
+  tidytable::left_join(auth_bs %>%
+                         tidytable::filter(alt == 1) %>%
+                         tidytable::select(year, ofl, abc) %>%
+                         tidytable::filter(year %in% c(max(yr) + 1, max(yr) + 2)) %>%
+                         tidytable::mutate(ofl = round(ofl * 1000),
+                                           maxabc = round(abc * 1000),
+                                           abc = maxabc)) %>%
+  # natural mortality
+  tidytable::left_join(data.frame(nat_mort) %>%
+                         tidytable::slice(rep(1:n(), each = 2)) %>%
+                         tidytable::rename(m = nat_mort) %>%
+                         tidytable::mutate(year = c(max(yr) + 1, max(yr) + 2),
+                                           blank = NA,
+                                           Status = c(max(yr), max(yr + 1)),
+                                           Overfishing = NA,
+                                           Overfished = NA,
+                                           `Approaching overfished` = NA)) %>%
+  tidytable::select(`M (natural mortality)` = m,
+                    Tier = tier,
+                    tb_proj,
+                    `Projected female spawning biomass (t)` = ssb_proj,
+                    `B100%` = sb0,
+                    `B40%` = sb40,
+                    `B35%` = sb35,
+                    FOFL = f_ofl,
+                    maxFABC = maxf_abc,
+                    FABC = f_abc,
+                    `OFL (t)` = ofl,
+                    `maxABC (t)` = maxabc,
+                    `ABC (t)` = maxabc,
+                    blank,
+                    Status,
+                    Overfishing,
+                    Overfished,
+                    `Approaching overfished`) %>%
+  t() %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("item")  %>%
+  tidytable::rename(y3 = V1, y4 = V2) %>%
+  tidytable::mutate(item = ifelse(item == "tb_proj",
+                                  paste0("Projected total (age ", rec_age,"+) biomass (t)"),
+                                  item)) -> exec_summ
 
 
-  # if old exec table exists join it to this one
-  if(file.exists(here::here(year, "base", "processed", "exec_summ.csv"))) {
-    vroom::vroom(here::here(year, "base", "processed", "exec_summ.csv")) %>%
-      tidytable::rename(y1 = y3, y2 = y4) %>%
-      tidytable::left_join(exec_summ) -> exec_summ
-  }
+# if old exec table exists join it to this one
+if(file.exists(here::here(year, "base", "processed", "exec_summ.csv"))) {
+  vroom::vroom(here::here(year, "base", "processed", "exec_summ.csv")) %>%
+    tidytable::rename(y1 = y3, y2 = y4) %>%
+    tidytable::left_join(exec_summ) -> exec_summ
+}
 
-  vroom::vroom_write(exec_summ, here::here(year, folder, "processed", "exec_summ.csv"), ",")
+vroom::vroom_write(exec_summ, here::here(year, folder, "processed", "exec_summ.csv"), ",")
 }
