@@ -196,14 +196,10 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
 
   # author F
   # get catch for next three years under max f scenario
-  percentiles <- readLines(here::here(here::here(year, folder, "proj", "max_f", "percentiles.out")))
+  maxf <- readLines(here::here(here::here(year, folder, "proj", "max_f", "percentiles.out")))
 
-  c_1 = as.numeric(strsplit(percentiles[grep("Catch", percentiles)[1]:grep("Spawning_Biomass", percentiles)[1]][4],
-                            split=" ")[[1]][8])
-  c_2 = as.numeric(strsplit(percentiles[grep("Catch", percentiles)[1]:grep("Spawning_Biomass", percentiles)[1]][5],
-                            split=" ")[[1]][8])
-  c_3 = as.numeric(strsplit(percentiles[grep("Catch", percentiles)[1]:grep("Spawning_Biomass", percentiles)[1]][6],
-                            split=" ")[[1]][8])
+  c_1 = as.numeric(stringr::str_split(maxf[grep(year+1, maxf)[1]], " ")[[1]][8]) * 1000
+  c_2 = as.numeric(stringr::str_split(maxf[grep(year+2, maxf)[1]], " ")[[1]][8]) * 1000
 
   # .dat file with future catch set at yield ratio * max catch
   dat <- c("#_Number_of_years with specified catch",
@@ -232,9 +228,9 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
            c(paste0(paste(year, yld_rat$proj_catch, sep = "\t"),
                     " # Estimated from catch thru ",
                     as.Date(data_pull)," with expansion factor = ", round(yld_rat$ratio, digits = 4)),
-             paste0(paste(year + 1, round(c_1 * 1000 * yld_rat$yld), sep = "\t"),
+             paste0(paste(year + 1, round(c_1 * yld_rat$yld), sep = "\t"),
                     " # Estimated as Max F scenario catch * yieldratio of ", round(yld_rat$yld, digits = 3)),
-             paste0(paste(year + 2, round(c_2 * 1000 * yld_rat$yld), sep = "\t"),
+             paste0(paste(year + 2, round(c_2 * yld_rat$yld), sep = "\t"),
                     " # Estimated as Max F scenario catch * yieldratio of ", round(yld_rat$yld, digits = 3)))
   )
 
@@ -300,7 +296,6 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
   }
 
   # get results data
-  maxf <- readLines(here::here(year, folder, "proj", "max_f", "percentiles.out"))
   authf <- readLines(here::here(year, folder, "proj", "author_f", "percentiles.out"))
   auth_bs = vroom::vroom(here::here(year, folder, "proj", "author_f", "bigsum.csv")) %>%
     tidytable::rename_with(tolower)
