@@ -357,18 +357,14 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
     tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric),
                       tidytable::across(c(tidytable::where(is.numeric), -year), ~round(.x * 1000))) %>%
     # f_ofl and f_abc
-    tidytable::mutate(f_ofl = tidytable::case_when(ssb_proj > sb40 ~
-                                                     as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]),
-                                                   ssb_proj < sb40 ~ ssb_proj / sb40 - 0.05) / 0.95 *
-                        as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]),
-                      maxf_abc = tidytable::case_when(ssb_proj > sb40 ~
-                                                        as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]),
-                                                      ssb_proj < sb40 ~ ssb_proj / sb40 - 0.05) / 0.95 *
-                        as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]),
-                      tidytable::across(c(f_ofl, maxf_abc), ~round(.x, digits = 3)),
+    tidytable::mutate(f_ofl = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3),
+                                                   ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][5]), digits = 3)),
+                      maxf_abc = tidytable::case_when(ssb_proj > sb40 ~ round(as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3),
+                                                      ssb_proj < sb40 ~ round((ssb_proj / sb40 - 0.05) / 0.95 * as.numeric(stringr::str_split(authf[grep("Fishing_mortality", authf)[1] + 2], " ")[[1]][4]), digits = 3)),
                       f_abc = maxf_abc,
                       tier = tidytable::case_when(ssb_proj > sb40 ~ "3a",
-                                                  ssb_proj < sb40 ~ "3b")) %>%
+                                                  ssb_proj < sb40 ~ "3b"),
+                      .by = year) %>%
     # ofl and abc
     tidytable::left_join(auth_bs %>%
                            tidytable::filter(alt == 1) %>%
@@ -415,12 +411,11 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
 
 
   # if old exec table exists join it to this one
-  if(file.exists(here::here(year, "base", "processed", "exec_summ.csv"))) {
-    vroom::vroom(here::here(year, "base", "processed", "exec_summ.csv")) %>%
+  if(file.exists(here::here(year, "base", "proj", "processed", "exec_summ.csv"))) {
+    vroom::vroom(here::here(year, "base", "proj", "processed", "exec_summ.csv")) %>%
       tidytable::rename(y1 = y3, y2 = y4) %>%
       tidytable::left_join(exec_summ) -> exec_summ
   }
 
-  vroom::vroom_write(exec_summ, here::here(year, folder, "processed", "exec_summ.csv"), ",")
-
+  vroom::vroom_write(exec_summ, here::here(year, folder, "proj", "processed", "exec_summ.csv"), ",")
 }
