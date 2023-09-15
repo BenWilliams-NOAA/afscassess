@@ -415,8 +415,8 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
 
 
   # if old exec table exists join it to this one
-  if(file.exists(here::here(year, "base", "processed", "exec_summ.csv"))) {
-    vroom::vroom(here::here(year, "base", "processed", "exec_summ.csv")) %>%
+  if(file.exists(here::here(year, "base", "proj", "processed", "exec_summ.csv"))) {
+    vroom::vroom(here::here(year, "base", "proj", "processed", "exec_summ.csv")) %>%
       tidytable::rename(y1 = y3, y2 = y4) %>%
       tidytable::left_join(exec_summ) -> exec_summ
   }
