@@ -1859,6 +1859,6 @@ process_results_pop <- function(year = 2023,
   }
 
   proc_res
-  save(proc_res, file = paste0(model_dir, "/processed/proc_res.Rdata"))
+  save(proc_res, file =here::here(model_dir,"processed","proc_res.dat"))
 
 }
