@@ -568,7 +568,7 @@ run_retro_pop <- function(year, model, model_name, dat_name, n_retro, mcmcon = F
 
       # copy and store mcmc results
       file.copy(from = here::here(year, 'mgmt', model, "retro", "model", "evalout.prj"),
-                to = here::here(year, 'mgmt', model, "retro", "results", paste0("mcmc_", endyr,".prj")),
+                to = here::here(year, 'mgmt', model, "retro", "results", paste0("mcmc_", endyr,".std")),
                 overwrite = TRUE)
 
     }
