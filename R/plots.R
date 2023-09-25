@@ -737,16 +737,6 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
 #'
 #' @examples plot_retro(year, folder)
 plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
-
-
-  # IGNORE THIS - HAS BEEN UPDATED ELSEWHERE
-
-
-
-
-
-
-
   peels = n_retro - 1
   max_year = year
   # loop through mcmc output
@@ -766,18 +756,23 @@ plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
                           paste0("mcmc_", retro_yrs[i], ".std")),
                sep = "",  header = FALSE) -> df
 
-    df = df[(0.2 * nrow(df)):nrow(df),] # drop burn in
+    df = df[floor((0.2 * nrow(df))):nrow(df),] # drop burn in
 
-    colnames(df) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort", "spawn_biom_proj",
+    nyrs_tot_biom_proj = ncol(df)- (2*length(yrs[1]:retro_yrs[i]) + 7 +
+      length(styr_rec:retro_yrs[i]) +  2*length(max(retro_yrs[i]) + 1:15) +
+      length(max(retro_yrs[i]) + 1:10))-1
+
+    colnames(df) = c("sigr", "q_srv1", "q_srv2", "F40", "natmort",
                      "ABC", "obj_fun",
                      paste0("tot_biom_", yrs[1]:retro_yrs[i]),
                      paste0("log_rec_dev_", styr_rec:retro_yrs[i]),
                      paste0("spawn_biom_", yrs[1]:retro_yrs[i]),
                      "log_mean_rec",
+                     # "spawn_biom_proj",
                      paste0("spawn_biom_proj_", max(retro_yrs[i]) + 1:15),
                      paste0("pred_catch_proj_", max(retro_yrs[i]) + 1:15),
                      paste0("rec_proj_", max(retro_yrs[i]) + 1:10),
-                     paste0("tot_biom_proj_", max(retro_yrs[i]) + 1:15))
+                     paste0("tot_biom_proj_", max(retro_yrs[i]) + 1:nyrs_tot_biom_proj))
 
     dat[[i]] = df %>% dplyr::mutate(retro_year = retro_yrs[i])
 
