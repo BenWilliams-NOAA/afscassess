@@ -150,6 +150,7 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
            "# TAC model indices (for aggregating)",
            as.character(tac_models),
            if(isTRUE(off_yr)){
+             offs = NA
              if(length(yr) - 1 == 1) {
                offs = paste(paste(yr[1], dplyr::filter(catch, year %in% yr[1])  %>%
                                     dplyr::pull(catch), sep = "\t"),
@@ -218,6 +219,7 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
            1,
            "# Catch in each future year",
            if(isTRUE(off_yr)) {
+             offs = NA
              for(i in 1:(length(yr) - 1)) {
                offs[i] = paste(paste(yr[i], dplyr::filter(catch, year %in% yr[i])  %>%
                                        dplyr::pull(catch), sep = "\t"),
@@ -354,22 +356,22 @@ data.frame(stringr::str_split_fixed(authf[(grep("Total_Biomass", authf)[1] + 2):
                          tidytable::slice(rep(1:n(), each = 2)) %>%
                          tidytable::mutate(year = as.character(c(max(yr)+1, max(yr+2))))) %>%
   tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric),
-                    tidytable::across(c(tidytable::where(is.numeric), -year), ~round(.x * 1000))) %>% 
-  tidytable::drop_na() %>% 
+                    tidytable::across(c(tidytable::where(is.numeric), -year), ~round(.x * 1000))) %>%
+  tidytable::drop_na() %>%
   # f_ofl and f_abc
   tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("Fishing_mortality", authf)[1]+2):
-                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>% 
-                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>% 
+                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>%
+                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>%
                          tidytable::select(year = X1, f_ofl = X5)) %>%
   tidytable::left_join(data.frame(stringr::str_split_fixed(authf[(grep("Fishing_mortality", authf)[1]+2):
-                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>% 
-                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>% 
+                                                                   (grep("Fishing_mortality", authf)[1]+14)], " ", n = 14)) %>%
+                         tidytable::mutate(tidytable::across(tidytable::everything(), as.numeric)) %>%
                          tidytable::select(year = X1, maxf_abc = X4)) %>%
   tidytable::mutate(f_ofl = round(ifelse(ssb_proj < sb40, (ssb_proj / sb40 - 0.05) / 0.95 * f_ofl, f_ofl), 3),
                     maxf_abc = round(ifelse(ssb_proj < sb40, (ssb_proj / sb40 - 0.05) / 0.95 * maxf_abc, maxf_abc), 3),
                     f_abc = maxf_abc,
                     tier = tidytable::case_when(ssb_proj > sb40 ~ "3a",
-                                                ssb_proj < sb40 ~ "3b")) %>% 
+                                                ssb_proj < sb40 ~ "3b")) %>%
   # ofl and abc
   tidytable::left_join(auth_bs %>%
                          tidytable::filter(alt == 1) %>%
@@ -418,7 +420,7 @@ data.frame(stringr::str_split_fixed(authf[(grep("Total_Biomass", authf)[1] + 2):
 # if old exec table exists join it to this one
 if(file.exists(here::here(year, "base", "processed", "exec_summ.csv"))) {
   vroom::vroom(here::here(year, "base", "processed", "exec_summ.csv")) %>%
-    tidytable::rename(y1 = y3, y2 = y4) %>%
+    tidytable::select(item, y1 = y3, y2 = y4) %>%
     tidytable::left_join(exec_summ) -> exec_summ
 }
 
