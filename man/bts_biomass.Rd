@@ -10,24 +10,24 @@ bts_biomass(
   type = "total",
   file = NULL,
   rmv_yrs = NULL,
-  alt = NULL,
-  save = TRUE
+  save = TRUE,
+  id = NULL
 )
 }
 \arguments{
-\item{year}{of interest}
+\item{year}{model year}
 
 \item{area}{options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area}
 
 \item{type}{"depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch}
 
-\item{file}{if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv")}
+\item{file}{if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv") which is stored in "data/user_input"}
 
 \item{rmv_yrs}{any survey years to exclude}
 
-\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+\item{save}{save to default location, default: TRUE}
 
-\item{save}{save to default location}
+\item{id}{identifier will be appended to file name - "bts_biomass_vast, default:NULL}
 }
 \description{
 survey biomass
