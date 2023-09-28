@@ -64,10 +64,10 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
   # Estimate catch ratio in final year to end of year
   obs_data %>%
     tidytable::filter(year %in% years) %>%
-    tidytable::mutate(tot_catch = sum(extrapolated_weight),
+    tidytable::mutate(tot_catch = sum(extrapolated_weight, na.rm=T),
                       test_date = lubridate::`year<-`(max(catch_data$week_end_date), year), .by = year) %>%
     tidytable::filter(haul_date <= test_date) %>%
-    tidytable::summarise(oct_catch = round(sum(extrapolated_weight)),
+    tidytable::summarise(oct_catch = round(sum(extrapolated_weight, na.rm=T)),
                          tot_catch = round(mean(tot_catch)), .by = year) %>%
     tidytable::summarise(ratio = 1 + (sum(tot_catch) - sum(oct_catch)) / sum(oct_catch)) -> rat
 
