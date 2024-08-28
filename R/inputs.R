@@ -56,8 +56,8 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
   names(fc) <- c("year", "catch")
 
   # Fishery catch data ----
-  vroom::vroom(here::here(year, "data", "raw", "fsh_catch_data.csv")) -> catch_data
-  vroom::vroom(here::here(year, "data", "raw", "fsh_obs_data.txt"),
+  vroom::vroom(here::here(year, "data", "raw", "fish_catch_data.csv")) -> catch_data
+  vroom::vroom(here::here(year, "data", "raw", "fish_obs_data.txt"),
                delim = ",",
                col_type = c(join_key = "c", haul_join = "c")) -> obs_data
 
@@ -100,11 +100,11 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
     tidytable::bind_cols(rat, yield) -> yld
 
   if(!(is.null(alt))) {
-    vroom::vroom_write(catch, here::here(year, alt, "output",  "fsh_catch.csv"), delim = ",")
+    vroom::vroom_write(catch, here::here(year, alt, "output",  "fish_catch.csv"), delim = ",")
     vroom::vroom_write(yld, here::here(year, alt, "output", "yld_rat.csv"), delim = ",")
     catch
   }else if(isTRUE(save)){
-    vroom::vroom_write(catch, here::here(year, "data", "output",  "fsh_catch.csv"), delim = ",")
+    vroom::vroom_write(catch, here::here(year, "data", "output",  "fish_catch.csv"), delim = ",")
     vroom::vroom_write(yld, here::here(year, "data", "output", "yld_rat.csv"), delim = ",")
     catch
   } else {
@@ -495,7 +495,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
 #' \dontrun{
 #' fish_age_comp(year, fishery = "fsh", rec_age, plus_age)
 #' }
-fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
+fish_age_comp <- function(year, fishery = "fish", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
 
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                delim = ",",
@@ -550,51 +550,50 @@ fish_age_comp <- function(year, fishery = "fsh", rec_age, plus_age, rmv_yrs = NU
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
 bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_age_specimen_data.csv"))) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_specimen_data.csv"))) %>%
     dplyr::filter(!is.na(age)) %>%
     dplyr::group_by(year) %>%
     dplyr::summarise(n_s = dplyr::n(),
                      n_h = length(unique(hauljoin))) -> dat1
 
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_ts_age_data.csv"))) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_agecomp_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
-    tidytable::rename.(year = survey_year) %>%
-    tidytable::filter.(age >= rec_age) %>%
-    tidytable::mutate.(tot = sum(agepop),
+    tidytable::rename(year = survey_year) %>%
+    tidytable::filter(age >= rec_age) %>%
+    tidytable::mutate(tot = sum(agepop),
                       age = ifelse(age < plus_age, age, plus_age),
                       .by = year) %>%
-    tidytable::summarise.(prop = sum(agepop) / mean(tot),
-                      .by = c(age, year)) %>%
-    tidytable::left_join.(dat1) %>%
-    tidytable::left_join.(expand.grid(year = unique(.$year),
-                                      age = rec_age:plus_age), .) %>%
-    tidytable::replace_na.(list(prop = 0)) %>%
-    tidytable::mutate.(AA_Index = 1,
-                       n_s = mean(n_s, na.rm = T),
-                       n_h = mean(n_h, na.rm = T),
-                       .by = year) %>%
-    tidytable::pivot_wider.(names_from = age, values_from = prop) %>%
-    tidytable::arrange.(year) -> age_comp
+    tidytable::summarise(prop = sum(agepop) / mean(tot),
+                         .by = c(age, year)) %>%
+    tidytable::left_join(dat1) %>%
+    tidytable::left_join(expand.grid(year = unique(.$year),
+                                     age = rec_age:plus_age), .) %>%
+    tidytable::replace_na(list(prop = 0)) %>%
+    tidytable::mutate(AA_Index = 1,
+                      n_s = mean(n_s, na.rm = T),
+                      n_h = mean(n_h, na.rm = T),
+                      .by = year) %>%
+    tidytable::pivot_wider(names_from = age, values_from = prop) %>%
+    tidytable::arrange(year) -> age_comp
 
 
   if(!is.null(rmv_yrs)){
     age_comp  %>%
-      tidytable::filter.(!(year %in% rmv_yrs)) -> age_comp
+      tidytable::filter(!(year %in% rmv_yrs)) -> age_comp
   }
 
   if(!is.null(alt)) {
     vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
     age_comp
   } else if(isTRUE(save)){
-    vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
+    vroom::vroom_write(age_comp, here::here(year, "data", paste0(area, "_bts_age_comp.csv")), ",")
     age_comp
   }
 
   age_comp
 
 }
-
 #' fishery length composition analysis
 #'
 #' @param year assessment year
@@ -609,7 +608,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @export fish_length_comp
 #'
 #' @examples
-fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv_yrs = NULL, id=NULL, save = TRUE){
+fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rmv_yrs = NULL, id=NULL, save = TRUE){
 
   if(is.null(lenbins)){
     stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
@@ -685,7 +684,7 @@ fish_length_comp <- function(year, fishery = "fsh", rec_age, lenbins = NULL, rmv
 bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
 
 
-  read.csv(here::here(year, "data", "raw", paste0(area, "_ts_length_specimen_data.csv"))) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_length_specimen_data.csv"))) %>%
     dplyr::rename_with(tolower) -> df
 
   if(is.null(lenbins)){
@@ -696,7 +695,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_ts_length_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_length_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::filter(!is.na(length)) %>%
     dplyr::mutate(length = length / 10) -> dat
@@ -757,9 +756,9 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
   }
 
   if(!is.null(alt)) {
-    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_ts_length_comp.csv")), row.names = F)
+    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_bts_length_comp.csv")), row.names = F)
   } else if(isTRUE(save)){
-    write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_ts_length_comp.csv")), row.names = F)
+    write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_bts_length_comp.csv")), row.names = F)
   }
     size_comp
 
