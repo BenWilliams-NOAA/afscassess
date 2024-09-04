@@ -523,7 +523,7 @@ fish_age_comp <- function(year, fishery = "fish", rec_age, plus_age, rmv_yrs = N
     tidytable::pivot_wider(names_from = age, values_from = prop) -> fac
 
   if(!is.null(id)) {
-    vroom::vroom_write(fac, here::here(year, "data", paste0(fishery, "_age_comp-", id, ".csv")), ",")
+    vroom::vroom_write(fac, here::here(year, "data", 'output', paste0(fishery, "_age_comp-", id, ".csv")), ",")
     fac
   } else if(isTRUE(save)) {
     vroom::vroom_write(fac, here::here(year, "data", "output", paste0(fishery, "_age_comp.csv")), ",")
@@ -541,7 +541,7 @@ fish_age_comp <- function(year, fishery = "fish", rec_age, plus_age, rmv_yrs = N
 #' @param rec_age recruitment age
 #' @param plus_age plus group age
 #' @param rmv_yrs any survey years to exclude
-#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'bts_age_comp-use.csv' in the data/output folder
 #' @param save save in the default location
 #'
 #' @return
@@ -584,11 +584,11 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
       tidytable::filter(!(year %in% rmv_yrs)) -> age_comp
   }
 
-  if(!is.null(alt)) {
-    vroom::vroom_write(age_comp, here::here(year, alt, "data", paste0(area, "_bts_age_comp.csv")), ",")
+  if(!is.null(id)) {
+    vroom::vroom_write(age_comp, here::here(year, "data", "output", paste0(area, "_bts_age_comp", id, ".csv")), ",")
     age_comp
   } else if(isTRUE(save)){
-    vroom::vroom_write(age_comp, here::here(year, "data", paste0(area, "_bts_age_comp.csv")), ",")
+    vroom::vroom_write(age_comp, here::here(year, "data", "output", paste0(area, "_bts_age_comp.csv")), ",")
     age_comp
   }
 
