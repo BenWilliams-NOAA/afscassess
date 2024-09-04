@@ -758,9 +758,9 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
   }
 
   if(!is.null(alt)) {
-    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_bts_size_comp.csv")), row.names = F)
+    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_bts_sizecomp.csv")), row.names = F)
   } else if(isTRUE(save)){
-    write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_bts_size_comp.csv")), row.names = F)
+    write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_bts_sizecomp.csv")), row.names = F)
   }
     size_comp
 
