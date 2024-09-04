@@ -686,7 +686,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
 
 
   area = tolower(area)
-  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_length_data.csv"))) %>%
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_sizecomp_data.csv"))) %>%
     dplyr::rename_with(tolower) -> df
 
   if(is.null(lenbins)){
@@ -697,7 +697,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_length_data.csv"))) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_sizecmop_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::filter(!is.na(length)) %>%
     dplyr::mutate(length = length / 10) -> dat
