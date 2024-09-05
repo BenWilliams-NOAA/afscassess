@@ -797,7 +797,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
 
 
   # data ----
-  vroom::vroom(here::here(year, "data", "raw", "bts_length_data.csv")) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_length_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::filter(year >= 1990, !is.na(length)) -> length_data_raw
 
@@ -809,7 +809,7 @@ weight_at_age <- function(year, admb_home = NULL, rec_age, area = "goa", alt=NUL
   }
 
 
-  vroom::vroom(here::here(year, "data", "raw", "bts_specimen_data.csv")) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_specimen_data.csv"))) %>%
     dplyr::rename_with(tolower) %>%
     dplyr::select(year, age, length, weight) %>%
     dplyr::filter(year >= 1990, !is.na(age))  %>%
