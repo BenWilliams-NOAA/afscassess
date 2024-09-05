@@ -322,7 +322,7 @@ age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GO
 #'
 #' @examples
 size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, alt=NULL, save = TRUE){
-
+  area = tolower(area)
 
   if(is.null(admb_home)){
     R2admb::setup_admb()
@@ -347,7 +347,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
     lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
   }
 
-  vroom::vroom(here::here(year, "data", "raw", "bts_specimen_data.csv")) %>%
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "bts_specimen_data.csv"))) %>%
     tidytable::rename_with(tolower) %>%
     tidytable::select(year, age, length) %>%
     tidytable::filter(year>=1990, !is.na(age))  %>%
