@@ -548,7 +548,7 @@ fish_age_comp <- function(year, fishery = "fish", rec_age, plus_age, rmv_yrs = N
 #' @export bts_age_comp
 #'
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
-bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, alt=NULL, save = TRUE){
+bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
 
   area = tolower(area)
   read.csv(here::here(year, "data", "raw", paste0(area, "_bts_specimen_data.csv"))) %>%
