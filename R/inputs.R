@@ -623,7 +623,7 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery, "_specimen_data.txt")),
                delim = ",",
                col_type = c(join_key="c", haul_join="c", port_join="c")) %>%
-    tidytable::filter(!is.na(age), age>=rec_age, year>=1990 & year<yr) %>%
+    tidytable::filter(!is.na(age), age>=rec_age, year<yr) %>%
     tidytable::group_by(year) %>%
     tidytable::tally(name = "age") %>%
     tidytable::filter(age >= 50) %>%
