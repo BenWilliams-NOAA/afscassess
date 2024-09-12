@@ -632,7 +632,7 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.txt")),
                delim = ",",
                col_type = c(haul_join="c", port_join="c")) %>%
-    tidytable::filter(!(year %in% unique(ages$year))) %>%
+    tidytable::filter(!(year %in% c(unique(ages$year), yr))) %>%
     tidytable::mutate(tot = sum(frequency),
                       length = ifelse(length >= max(lenbins), max(lenbins), length),
                       n_h = length(unique(na.omit(haul_join))) + length(unique(na.omit(port_join))),
