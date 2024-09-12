@@ -675,6 +675,7 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
 #' @param area survey area default = "goa"
 #' @param lenbins lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")
 #' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
+#' @param rmv_yrs any survey years to exclude
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #' @return
@@ -682,7 +683,7 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
 #'
 #' @examples
 #'
-bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, alt=NULL, save = TRUE){
+bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
 
   area = tolower(area)
@@ -755,6 +756,11 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, al
                     n_s = mean(n_s, na.rm = T),
                     n_h = mean(n_h, na.rm = T)) %>%
       tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
+  }
+
+  if(!is.null(rmv_yrs)){
+    size_comp  %>%
+      tidytable::filter(!(year %in% rmv_yrs)) -> size_comp
   }
 
   if(!is.null(alt)) {
