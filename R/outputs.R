@@ -54,19 +54,19 @@ process_results <- function(year, folder, model_name, dat_name,
 
   # clean rep file
   suppressWarnings(data.frame(year = unlist(base::strsplit(REP[grep("Year", REP)[1]]," "))) %>%
-                     tidytable::mutate.(year = as.numeric(year)) %>%
-                     tidytable::drop_na.() %>%
-                     tidytable::pull.(year)) -> yrs
+                     tidytable::mutate(year = as.numeric(year)) %>%
+                     tidytable::drop_na() %>%
+                     tidytable::pull(year)) -> yrs
 
   suppressWarnings(data.frame(age = unlist(base::strsplit(REP[grep("Age", REP)[1]]," "))) %>%
-                     tidytable::mutate.(age = as.numeric(age)) %>%
-                     tidytable::drop_na.() %>%
-                     tidytable::pull.(age)) -> ages
+                     tidytable::mutate(age = as.numeric(age)) %>%
+                     tidytable::drop_na() %>%
+                     tidytable::pull(age)) -> ages
 
   styr_rec <- yrs[1] - length(ages) + rec_age
 
   suppressWarnings(as.data.frame(cbind(yrs = yrs, ages = ages, styr_rec = styr_rec)) %>%
-                     tidytable::mutate.(ages = replace(ages, duplicated(ages), NA),
+                     tidytable::mutate(ages = replace(ages, duplicated(ages), NA),
                                         styr_rec = replace(styr_rec, duplicated(styr_rec), NA))) %>%
     write.csv(here::here(year, folder, "processed", "ages_yrs.csv"), row.names = FALSE)
 
@@ -145,7 +145,7 @@ process_results <- function(year, folder, model_name, dat_name,
 
 
   data.frame(year = syr, biomass = obs, pred = pred, se = se) %>%
-    tidytable::mutate.(lci = biomass - 1.96 * se,
+    tidytable::mutate(lci = biomass - 1.96 * se,
                        uci = biomass + 1.96 * se) %>%
     write.csv(here::here(year, folder, "processed", "survey.csv"), row.names = FALSE)
 
