@@ -25,30 +25,30 @@ plot_compare_biomass <- function(year, models = c('2020, plus_age', '2020, plus_
     bio = vroom::vroom(here::here(year, model, "processed", "bio_rec_f.csv"))
 
     dat %>%
-      tidytable::bind_rows.(
+      tidytable::bind_rows(
         vroom::vroom(here::here(year, model, "processed", "mceval.csv"))  %>%
-          tidytable::select.(paste0("tot_biom_", yrs)) %>%
-          tidytable::mutate.(group = 1:tidytable::n.()) %>%
-          tidytable::pivot_longer.(-group) %>%
-          tidytable::mutate.(year = as.numeric(gsub("tot_biom_", "", name)),
+          tidytable::select(paste0("tot_biom_", yrs)) %>%
+          tidytable::mutate(group = 1:tidytable::n()) %>%
+          tidytable::pivot_longer(-group) %>%
+          tidytable::mutate(year = as.numeric(gsub("tot_biom_", "", name)),
                              name = "Total biomass") %>%
-          tidytable::bind_rows.( vroom::vroom(here::here(year, model, "processed", "mceval.csv")) %>%
-                                   tidytable::select.(paste0("spawn_biom_", yrs)) %>%
-                                   tidytable::mutate.(group = 1) %>%
-                                   tidytable::pivot_longer.(-group) %>%
-                                   tidytable::mutate.(year = as.numeric(gsub("spawn_biom_", "", name)),
+          tidytable::bind_rows( vroom::vroom(here::here(year, model, "processed", "mceval.csv")) %>%
+                                   tidytable::select(paste0("spawn_biom_", yrs)) %>%
+                                   tidytable::mutate(group = 1) %>%
+                                   tidytable::pivot_longer(-group) %>%
+                                   tidytable::mutate(year = as.numeric(gsub("spawn_biom_", "", name)),
                                                       name = "Spawning biomass")) %>%
-          tidytable::mutate.(name = factor(name, levels = c("Total biomass", "Spawning biomass"))) %>%
-          tidytable::summarise.(median = median(value) / 1000,
+          tidytable::mutate(name = factor(name, levels = c("Total biomass", "Spawning biomass"))) %>%
+          tidytable::summarise(median = median(value) / 1000,
                                 lci = quantile(value, 0.025) / 1000,
                                 uci = quantile(value, 0.975) / 1000,
                                 .by = c(year, name)) %>%
-          tidytable::left_join.(data.frame(year = yrs,
+          tidytable::left_join(data.frame(year = yrs,
                                            tot = bio$tot_biom / 1000,
                                            bio = bio$sp_biom / 1000)) %>%
-          tidytable::mutate.(biomass = ifelse(name == "Total biomass", tot, bio),
+          tidytable::mutate(biomass = ifelse(name == "Total biomass", tot, bio),
                              model = model) %>%
-          tidytable::select.(-tot, -bio)) -> dat
+          tidytable::select(-tot, -bio)) -> dat
   }
 
   dat %>%
