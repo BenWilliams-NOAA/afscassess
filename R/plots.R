@@ -18,15 +18,15 @@ plot_catch <- function(year, folder, save=TRUE){
 
   vroom::vroom(here::here(year, folder, "processed", "ages_yrs.csv"))$yrs -> yrs
   vroom::vroom(here::here(year, folder, "processed", "catch.csv")) %>%
-    tidytable::bind_cols.(year = yrs) %>%
-    tidytable::summarise.(Observed = obs / 1000,
+    tidytable::bind_cols(year = yrs) %>%
+    tidytable::summarise(Observed = obs / 1000,
                           Estimated = pred / 1000,
                           years = "All years") -> dat
 
-  tidytable::filter.(dat, year %in% (max(yrs) - 20):max(yrs)) %>%
-    tidytable::mutate.(years = "Recent years") %>%
-    tidytable::bind_rows.(dat) %>%
-    tidytable::pivot_longer.(c(-year, -years)) %>%
+  tidytable::filter(dat, year %in% (max(yrs) - 20):max(yrs)) %>%
+    tidytable::mutate(years = "Recent years") %>%
+    tidytable::bind_rows(dat) %>%
+    tidytable::pivot_longer(c(-year, -years)) %>%
     ggplot2::ggplot(ggplot2::aes(year, value, color = name, lty = name)) +
     ggplot2::geom_line() +
     scico::scale_color_scico_d(name = "", palette = "roma") +
@@ -68,27 +68,27 @@ plot_biomass <- function(year, folder, save=TRUE) {
     yrs = bio$year
 
     vroom::vroom(here::here(year, folder, "processed", "mceval.csv"))  %>%
-      tidytable::select.(paste0("tot_biom_", yrs)) %>%
-      tidytable::mutate.(group = 1:tidytable::n.()) %>%
-      tidytable::pivot_longer.(-group) %>%
-      tidytable::mutate.(year = as.numeric(gsub("tot_biom_", "", name)),
+      tidytable::select(paste0("tot_biom_", yrs)) %>%
+      tidytable::mutate(group = 1:tidytable::n()) %>%
+      tidytable::pivot_longer(-group) %>%
+      tidytable::mutate(year = as.numeric(gsub("tot_biom_", "", name)),
                          name = "Total biomass") %>%
-      tidytable::bind_rows.( vroom(here::here(year, folder, "processed", "mceval.csv")) %>%
+      tidytable::bind_rows( vroom(here::here(year, folder, "processed", "mceval.csv")) %>%
                                tidytable::select(paste0("spawn_biom_", yrs)) %>%
-                               tidytable::mutate.(group = 1) %>%
-                               tidytable::pivot_longer.(-group) %>%
-                               tidytable::mutate.(year = as.numeric(gsub("spawn_biom_", "", name)),
+                               tidytable::mutate(group = 1) %>%
+                               tidytable::pivot_longer(-group) %>%
+                               tidytable::mutate(year = as.numeric(gsub("spawn_biom_", "", name)),
                                                   name = "Spawning biomass")) %>%
-      tidytable::mutate.(name = factor(name, levels = c("Total biomass", "Spawning biomass"))) %>%
-      tidytable::summarise.(median = median(value) / 1000,
+      tidytable::mutate(name = factor(name, levels = c("Total biomass", "Spawning biomass"))) %>%
+      tidytable::summarise(median = median(value) / 1000,
                             lci = quantile(value, 0.025) / 1000,
                             uci = quantile(value, 0.975) / 1000,
                             .by = c(year, name)) %>%
-      tidytable::left_join.(data.frame(year = yrs,
+      tidytable::left_join(data.frame(year = yrs,
                                        tot = bio$tot_biom / 1000,
                                        bio = bio$sp_biom / 1000)) %>%
-      tidytable::mutate.(biomass = ifelse(name == "Total biomass", tot, bio)) %>%
-      tidytable::select.(-tot, -bio) -> dat
+      tidytable::mutate(biomass = ifelse(name == "Total biomass", tot, bio)) %>%
+      tidytable::select(-tot, -bio) -> dat
 
     dat %>%
       ggplot2::ggplot(ggplot2::aes(year, biomass)) +
@@ -219,7 +219,7 @@ plot_phase <- function(year, folder, model_name, save = TRUE){
              y = c(bio$F, STD$value[which(STD$name=="F40")] * yield,
                    STD$value[which(STD$name=="F40")] * yield) /
                STD$value[which(STD$name=="F35")]) %>%
-    tidytable::mutate.(label = stringr::str_sub(year, 3),
+    tidytable::mutate(label = stringr::str_sub(year, 3),
                        decade = (floor(year / 10) * 10))  %>%
     ggplot2::ggplot(ggplot2::aes(x, y)) +
     ggplot2::geom_path(color = "darkgray", show.legend = FALSE) +
@@ -336,12 +336,12 @@ plot_rec <- function(year, folder, rec_age, save=TRUE){
   vroom::vroom(here::here(year, folder, "processed", "bio_rec_f.csv")) %>%
     tidytable::select(recruits) %>%
     tidytable::bind_cols(vroom::vroom(here::here(year, folder, "processed", "mceval.csv")) %>%
-                           tidytable::select.(log_mean_rec, paste0("log_rec_dev_", yrs)) %>%
-                           tidytable::mutate.(group = 1:tidytable::n()) %>%
-                           tidytable::pivot_longer.(c(-group, -log_mean_rec), values_to = "rec_dev") %>%
-                           tidytable::mutate.(year = as.numeric(gsub("log_rec_dev_", "", name)),
+                           tidytable::select(log_mean_rec, paste0("log_rec_dev_", yrs)) %>%
+                           tidytable::mutate(group = 1:tidytable::n()) %>%
+                           tidytable::pivot_longer(c(-group, -log_mean_rec), values_to = "rec_dev") %>%
+                           tidytable::mutate(year = as.numeric(gsub("log_rec_dev_", "", name)),
                                               rec_dev = exp(log_mean_rec + rec_dev)) %>%
-                           tidytable::summarise.(lci = quantile(rec_dev, 0.025),
+                           tidytable::summarise(lci = quantile(rec_dev, 0.025),
                                                  uci = quantile(rec_dev, 0.975),
                                                  .by = year)) -> dat
   # set view
@@ -379,8 +379,8 @@ plot_rec_ssb <- function(year, folder, rec_age, save=TRUE){
 
   vroom::vroom(here::here(year, folder, "processed", "ages_yrs.csv"))$yrs -> yrs
   vroom::vroom(here::here(year, folder, "processed", "bio_rec_f.csv")) %>%
-    tidytable::select.(sp_biom, recruits) %>%
-    tidytable::bind_cols.(year = yrs) -> dat
+    tidytable::select(sp_biom, recruits) %>%
+    tidytable::bind_cols(year = yrs) -> dat
 
   # set view
   ggplot2::theme_set(afscassess::theme_report())
@@ -388,7 +388,7 @@ plot_rec_ssb <- function(year, folder, rec_age, save=TRUE){
   data.frame(ssb = dat$sp_biom[1:(length(yrs) - rec_age)] / 1000,
              rec = dat$recruits[(rec_age + 1):length(yrs)],
              year = yrs[1:(length(yrs)-rec_age)]) %>%
-    tidytable::mutate.(label = stringr::str_sub(year, 3),
+    tidytable::mutate(label = stringr::str_sub(year, 3),
                        decade = (floor(year / 10) * 10)) %>%
     ggplot2::ggplot(ggplot2::aes(ssb, rec)) +
     ggplot2::geom_label(ggplot2::aes(label=label, color = decade),
@@ -421,13 +421,13 @@ plot_selex <- function(year, folder, save=TRUE){
 
 
   vroom::vroom(here::here(year, folder, "processed", "selex.csv")) %>%
-    tidytable::select.(age, Fishery = fish, Survey = srv1, Maturity = maturity) -> dat
+    tidytable::select(age, Fishery = fish, Survey = srv1, Maturity = maturity) -> dat
 
   # set view
   ggplot2::theme_set(afscassess::theme_report())
 
   dat %>%
-    tidytable::pivot_longer.(-age) %>%
+    tidytable::pivot_longer(-age) %>%
     ggplot2::ggplot(ggplot2::aes(age, value, color = name)) +
     ggplot2::geom_line() +
     scico::scale_color_scico_d(name = "", palette = 'roma', begin = 0.2)+
@@ -459,13 +459,13 @@ plot_survey <- function(year, folder, save=TRUE){
   }
 
   vroom::vroom(here::here(year, folder, "processed", "survey.csv")) %>%
-    tidytable::rename_with.(tolower) %>%
-    tidytable::select.(year = starts_with("y"),
+    tidytable::rename_with(tolower) %>%
+    tidytable::select(year = starts_with("y"),
                        Observed = starts_with("bio"),
                        Predicted = pred,
                        se, lci, uci) %>%
-    tidytable::pivot_longer.(-c(year, se, uci, lci)) %>%
-    tidytable::mutate.(value = value / 1000,
+    tidytable::pivot_longer(-c(year, se, uci, lci)) %>%
+    tidytable::mutate(value = value / 1000,
                        uci = uci / 1000,
                        lci = lci / 1000) -> dat
   # set view
@@ -516,8 +516,8 @@ plot_swath <- function(year, folder, save=TRUE){
   ggplot2::theme_set(afscassess::theme_report())
 
   # establish quantiles
-  q_name <- tidytable::map_chr.(seq(.025,.975,.05), ~ paste0("q", .x*100))
-  q_fun <- tidytable::map.(seq(.025,.975,.05), ~ purrr::partial(quantile, probs = .x, na.rm = TRUE)) %>%
+  q_name <- tidytable::map_chr(seq(.025,.975,.05), ~ paste0("q", .x*100))
+  q_fun <- tidytable::map(seq(.025,.975,.05), ~ purrr::partial(quantile, probs = .x, na.rm = TRUE)) %>%
     purrr::set_names(nm = q_name)
 
   # read in data calculate quantiles/median and plot
@@ -525,16 +525,16 @@ plot_swath <- function(year, folder, save=TRUE){
   vroom::vroom(here::here(year, folder, "processed", "b35_b40_yld.csv")) -> bby
 
   vroom::vroom(here::here(year, folder, "processed", "mceval.csv")) %>%
-    tidytable::select.(paste0("spawn_biom_", yrs),
+    tidytable::select(paste0("spawn_biom_", yrs),
                        paste0("spawn_biom_proj_", (max(yrs)+1):(max(yrs+15)))) %>%
-    tidytable::mutate.(group = 1:tidytable::n.()) %>%
-    tidytable::pivot_longer.(c(-group), values_to = "biomass") %>%
-    tidytable::mutate.(year = as.numeric(stringr::str_extract(name, "[[:digit:]]+")),
+    tidytable::mutate(group = 1:tidytable::n()) %>%
+    tidytable::pivot_longer(c(-group), values_to = "biomass") %>%
+    tidytable::mutate(year = as.numeric(stringr::str_extract(name, "[[:digit:]]+")),
                        biomass = biomass / 1000) %>%
     dplyr::group_by(year) %>%
     dplyr::summarise_at(dplyr::vars(biomass), tibble::lst(!!!q_fun, median)) %>%
-    tidytable::pivot_longer.(-c(year, median)) %>%
-    tidytable::mutate.(grouping = tidytable::case_when.(name == q_name[1] | name == q_name[20] ~ 1,
+    tidytable::pivot_longer(-c(year, median)) %>%
+    tidytable::mutate(grouping = tidytable::case_when(name == q_name[1] | name == q_name[20] ~ 1,
                                                         name == q_name[2] | name == q_name[19] ~ 2,
                                                         name == q_name[3] | name == q_name[18] ~ 3,
                                                         name == q_name[4] | name == q_name[17] ~ 4,
@@ -544,7 +544,7 @@ plot_swath <- function(year, folder, save=TRUE){
                                                         name == q_name[8] | name == q_name[13] ~ 8,
                                                         name == q_name[9] | name == q_name[12] ~ 9,
                                                         name == q_name[10] | name == q_name[11] ~ 10)) %>%
-    tidytable::mutate.(min = min(value),
+    tidytable::mutate(min = min(value),
                        max = max(value),
                        fill = as.character(ifelse(year>yr, 0, 1)),
                        .by = c(year, grouping)) -> dat
@@ -594,7 +594,7 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
 
   read.delim(here::here(year, folder, paste0(model_name, ".std")), sep="", header = TRUE) %>%
     tidytable::filter(name %in% pars) %>%
-    tidytable::slice(tidytable::n.(),
+    tidytable::slice(tidytable::n(),
                      .by = name) %>%
     tidytable::mutate(name = tidytable::case_when(name =="q_srv1" ~ "q_srv",
                                                   name =="nattymort" ~ "natmort",
@@ -609,55 +609,55 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
                       name = factor(name, levels = c("q_srv", "natmort", "F", "ABC", "tot_biom_", "spawn_biom_"))) -> fits
 
   vroom::vroom(here::here(year, folder, "processed", "mceval.csv"))  %>%
-    tidytable::select.(q_srv1, ABC, natmort, paste0("tot_biom_", yrs),
+    tidytable::select(q_srv1, ABC, natmort, paste0("tot_biom_", yrs),
                        F40, paste0("spawn_biom_", yrs)) %>%
-    tidytable::mutate.(group = 1:dplyr::n()) %>%
-    tidytable::pivot_longer.(-group) %>%
-    tidytable::mutate.(years = as.numeric(gsub('\\D+','', name)),
+    tidytable::mutate(group = 1:dplyr::n()) %>%
+    tidytable::pivot_longer(-group) %>%
+    tidytable::mutate(years = as.numeric(gsub('\\D+','', name)),
                        name = gsub('[[:digit:]]+', '', name),
-                       value = tidytable::case_when.(name=="spawn_biom_" ~ value / 1000,
+                       value = tidytable::case_when(name=="spawn_biom_" ~ value / 1000,
                                                      name=="tot_biom_" ~ value / 1000,
                                                      name=="ABC" ~ value / 1000,
                                                      TRUE ~ value),
                        name = factor(name, levels = c("q_srv", "natmort", "F", "ABC", "tot_biom_", "spawn_biom_"))) -> dat
 
   p1 = dat %>%
-    tidytable::filter.(name == "q_srv") %>%
+    tidytable::filter(name == "q_srv") %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "q_srv"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "q_srv"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05),
                           size = 2, color = "black") +
     ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
     ggplot2::xlab(expression("Trawl survey catchability ("*italic(q)*")"))
 
   p2 = dat %>%
-    tidytable::filter.(name == "natmort") %>%
+    tidytable::filter(name == "natmort") %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "natmort"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "natmort"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05), size = 2, color = "black") +
     ggplot2::ylab("Probability density") +
     ggplot2::xlab(expression("Natural mortality ("*italic(M)*")")) +
     ggplot2::theme(legend.position = "none")
 
   p3 = dat %>%
-    tidytable::filter.(name == "F") %>%
+    tidytable::filter(name == "F") %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "F"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "F"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05),
                           size = 2, color = "black") +
     ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
@@ -665,14 +665,14 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
     ggplot2::theme(legend.position = "none")
 
   p4 = dat %>%
-    tidytable::filter.(name == "ABC") %>%
+    tidytable::filter(name == "ABC") %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "ABC"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "ABC"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05),
                           size = 2, color = "black") +
     ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
@@ -681,14 +681,14 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
 
 
   p5 = dat %>%
-    tidytable::filter.(name == "tot_biom_", years == year) %>%
+    tidytable::filter(name == "tot_biom_", years == year) %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "tot_biom_"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "tot_biom_"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05),
                           size = 2, color = "black") +
     ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
@@ -696,14 +696,14 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
     ggplot2::theme(legend.position = "none")
 
   p6 = dat %>%
-    tidytable::filter.(name == "spawn_biom_", years == year) %>%
+    tidytable::filter(name == "spawn_biom_", years == year) %>%
     ggplot2::ggplot(ggplot2::aes(value)) +
     # facet_wrap(~name, scales = "free", dir = "v") +
     ggplot2::geom_histogram(ggplot2::aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]),
                             fill = "lightgray", color = "darkgray", bins = 50) +
     # scico::scale_fill_scico(palette = "grayC", direction = -1) +
     # ggplot2::scale_x_continuous(breaks = seq(0,2.5,0.5)) +
-    ggplot2::geom_segment(data = tidytable::filter.(fits, name == "spawn_biom_"),
+    ggplot2::geom_segment(data = tidytable::filter(fits, name == "spawn_biom_"),
                           mapping = ggplot2::aes(x = value, xend = value, y = 0, yend = 0.05),
                           size = 2, color = "black") +
     ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
