@@ -95,7 +95,7 @@ proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, regi
             here::here(year, folder, "proj", "model"))
 
   # get data
-  catch = vroom::vroom(here::here(year, "data", "output", "fsh_catch.csv")) # currently setup for 1 fleet...
+  catch = vroom::vroom(here::here(year, "data", "output", "fish_catch.csv")) # currently setup for 1 fleet...
   yld_rat = vroom::vroom(here::here(year, "data", "output", "yld_rat.csv"))
   data_pull = read.table(here::here(year, "data", "raw", "data_called.txt"))[2,1]
 
