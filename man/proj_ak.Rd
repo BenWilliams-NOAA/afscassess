@@ -6,7 +6,7 @@
 \usage{
 proj_ak(
   year,
-  last_full_assess = NULL,
+  last_full_assess,
   alt = NULL,
   folder,
   species,
@@ -32,11 +32,11 @@ proj_ak(
 \arguments{
 \item{year}{model year}
 
-\item{last_full_assess}{year of the last full assessment, default: NULL}
+\item{last_full_assess}{year of the last full assessment}
 
-\item{alt}{prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'}
+\item{alt}{prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year/alt"}
 
-\item{folder}{folder that model is in, folder structure: 'year\alt\folder'}
+\item{folder}{folder that model is in, folder structure: 'year/alt/folder'}
 
 \item{species}{e.g., "dusky"}
 
@@ -54,7 +54,7 @@ proj_ak(
 
 \item{rec_proj}{projection rec form (default: 1 = use observed mean and std, option 2 = use estimated SRR and estimated sigma R)}
 
-\item{srr_cond}{SR-Conditioning (0 means no, 1 means use Fmsy == F35%?, 2 means Fmsy == F35% and Bmsy=B35%  condition (affects SRR fits)}
+\item{srr_cond}{SR-Conditioning (0 means no, 1 means use Fmsy == F35, 2 means Fmsy == F35 and Bmsy=B35 condition (affects SRR fits)}
 
 \item{srr_prior}{a prior that mean historical recruitment is similar to expected recruitment at half mean SSB and double mean SSB 0 means don't use, otherwise specify CV}
 

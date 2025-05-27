@@ -6,7 +6,7 @@
 \usage{
 fish_length_comp(
   year,
-  fishery = "fsh",
+  fishery = "fish",
   rec_age,
   lenbins = NULL,
   rmv_yrs = NULL,

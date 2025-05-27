@@ -9,6 +9,7 @@ bts_length_comp(
   area = "goa",
   lenbins = NULL,
   bysex = NULL,
+  rmv_yrs = NULL,
   alt = NULL,
   save = TRUE
 )
@@ -21,6 +22,8 @@ bts_length_comp(
 \item{lenbins}{lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")}
 
 \item{bysex}{should the length comp be calculated by sex - default is null (not differentiated)}
+
+\item{rmv_yrs}{any survey years to exclude}
 
 \item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 }

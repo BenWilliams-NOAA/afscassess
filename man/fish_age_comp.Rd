@@ -6,7 +6,7 @@
 \usage{
 fish_age_comp(
   year,
-  fishery = "fsh",
+  fishery = "fish",
   rec_age,
   plus_age,
   rmv_yrs = NULL,

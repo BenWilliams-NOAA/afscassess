@@ -10,7 +10,7 @@ bts_age_comp(
   rec_age,
   plus_age,
   rmv_yrs = NULL,
-  alt = NULL,
+  id = NULL,
   save = TRUE
 )
 }
@@ -25,7 +25,7 @@ bts_age_comp(
 
 \item{rmv_yrs}{any survey years to exclude}
 
-\item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+\item{id}{id a specific comp name - will be placed at end of file name e.g., id='use' will create 'bts_age_comp-use.csv' in the data/output folder}
 
 \item{save}{save in the default location}
 }
