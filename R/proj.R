@@ -10,9 +10,9 @@
 #'   5. compile and retrieve results
 #'
 #' @param year model year
-#' @param last_full_assess year of the last full assessment, default: NULL
-#' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year\alt'
-#' @param folder folder that model is in, folder structure: 'year\alt\folder'
+#' @param last_full_assess year of the last full assessment
+#' @param alt prefix folder structure e.g. "mgmt" - default = NULL folder structure: 'year/alt"
+#' @param folder folder that model is in, folder structure: 'year/alt/folder'
 #' @param model_name name of the assessment model e.g., "m18.2" not the projection model, this is hopefully the same name as the folder...
 #' @param species e.g., "dusky"
 #' @param region e.g., "goa"
@@ -22,7 +22,7 @@
 #' @param tac_abc -  set TAC equal to ABC (1 means true, otherwise false)",
 #' @param srr - Stock-recruitment type (1=Ricker, 2=Bholt)
 #' @param rec_proj projection rec form (default: 1 = use observed mean and std, option 2 = use estimated SRR and estimated sigma R)
-#' @param srr_cond SR-Conditioning (0 means no, 1 means use Fmsy == F35%?, 2 means Fmsy == F35% and Bmsy=B35%  condition (affects SRR fits)
+#' @param srr_cond SR-Conditioning (0 means no, 1 means use Fmsy == F35, 2 means Fmsy == F35 and Bmsy=B35 condition (affects SRR fits)
 #' @param srr_prior a prior that mean historical recruitment is similar to expected recruitment at half mean SSB and double mean SSB 0 means don't use, otherwise specify CV
 #' @param nyrs_proj Number of projection years default: 14
 #' @param nsims Number of simulations default: 1000
@@ -35,7 +35,7 @@
 
 #' @export
 
-proj_ak <- function(year, last_full_assess=NULL, alt=NULL, folder, species, region, rec_age = 2,
+proj_ak <- function(year, last_full_assess, alt=NULL, folder, species, region, rec_age = 2,
                     off_yr = FALSE, run_name = "Standard",
                     tac_abc = 1, srr = 1, rec_proj = 1, srr_cond = 0, srr_prior = 0,
                     nyrs_proj = 14, nsims = 1000, n_species = 1, abc_mult = 1, pop_scalar = 1000,
