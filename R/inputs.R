@@ -176,7 +176,68 @@ bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs 
 
 }
 
+#' GAP survey biomass
+#'
+#' @param year model year
+#' @param area options are bs, bsslope, nbs, ai, goa, old_bs - can only call a single area
+#' @param type "depth", "stratum", "area", "total", "inpfc", "inpfc_depth" - only available for goa/ai (default: "total") - can only use a single switch
+#' @param file if not using the design-based abundance, the file name must be stated (e.g. "GAP_VAST.csv") which is stored in "data/user_input"
+#' @param rmv_yrs any survey years to exclude
+#' @param save save to default location, default: TRUE
+#' @param id identifier will be appended to file name - "bts_biomass_vast, default:NULL
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'
+bts_gap_biomass <- function(year, area = "goa", type = "region", file = NULL, rmv_yrs = NULL, save = TRUE, id = NULL){
 
+  area = tolower(area)
+  type = tolower(type)
+
+  if(is.null(file)){
+    vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", type, "_bts_biomass_data.csv"))) %>%
+      dplyr::rename_with(tolower)  -> df
+
+    # sablefish are different...
+    if("summary_depth" %in% names(df)){
+      df %>%
+        dplyr::filter(summary_depth < 995, year != 2001) %>%
+        dplyr::group_by(year) %>%
+        dplyr::summarise(biom = sum(area_biomass) / 1000,
+                         se = sqrt(sum(biomass_var)) / 1000) %>%
+        dplyr::mutate(lci = biom - 1.96 * se,
+                      uci = biom + 1.96 * se) -> sb
+    } else {
+      df %>%
+        tidytable::summarise(biomass = sum(biomass_mt),
+                             se = sqrt(sum(biomass_var)),
+                             .by = year) %>%
+        tidytable::mutate(lci = biomass - 1.96 * se,
+                          uci = biomass + 1.96 * se,
+                          lci = ifelse(lci < 0, 0, lci)) %>%
+        tidytable::mutate(tidytable::across(tidytable::where(is.double), round)) %>%
+        tidytable::filter(biomass > 0) -> sb
+    }
+
+  } else {
+    vroom::vroom(here::here(year, "data", "user_input", file)) -> sb
+  }
+
+  if(!is.null(rmv_yrs)){
+    sb <- dplyr::filter(sb, !(year %in% rmv_yrs))
+  }
+
+  if(!is.null(id) & isTRUE(save)){
+    vroom::vroom_write(sb, here::here(year, "data", "output", paste0(area, "_", type, "_bts_biomass_", id,".csv")), ",")
+  } else if(is.null(id) & isTRUE(save)){
+    vroom::vroom_write(sb, here::here(year, "data", "output", paste(area, type, "bts_biomass.csv", sep="_")), ",")
+    sb
+  } else
+    sb
+
+}
 #' aging error analysis
 #'
 #' @param read_tester = looks for a file in the user_input folder, e.g., :"reader_tester.csv"
@@ -595,6 +656,67 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
   age_comp
 
 }
+
+#' GAP trawl survey age comp analysis
+#'
+#' @param year assessment year
+#' @param area default is "goa"
+#' @param rec_age recruitment age
+#' @param plus_age plus group age
+#' @param rmv_yrs any survey years to exclude
+#' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'bts_age_comp-use.csv' in the data/output folder
+#' @param save save in the default location
+#'
+#' @return
+#' @export
+#'
+#' @examples bts_gap_age_comp(year = 2020, rec_age = 2, plus_age = 45)
+bts_gap_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
+
+    area = tolower(area)
+    # read.csv(here::here(year, "data", "raw", paste0(area, "_bts_gap_specimen_data.csv"))) %>%
+    #   dplyr::filter(!is.na(age)) %>%
+    #   dplyr::group_by(year) %>%
+    #   dplyr::summarise(n_s = dplyr::n(),
+    #                    n_h = length(unique(hauljoin))) -> dat1
+
+
+    read.csv(here::here(year, "data", "raw", paste0(area, "_bts_gap_agecomp_data.csv"))) %>%
+      tidytable::filter(age >= rec_age) %>%
+      tidytable::mutate(tot = sum(population_count),
+                        age = ifelse(age < plus_age, age, plus_age),
+                        .by = year) %>%
+      tidytable::summarise(prop = sum(population_count) / mean(tot),
+                           .by = c(age, year)) %>%
+      # tidytable::left_join(dat1) %>%
+      tidytable::left_join(expand.grid(year = unique(.$year),
+                                       age = rec_age:plus_age), .) %>%
+      tidytable::replace_na(list(prop = 0)) %>%
+      # tidytable::mutate(AA_Index = 1,
+      #                   n_s = mean(n_s, na.rm = T),
+      #                   n_h = mean(n_h, na.rm = T),
+      #                   .by = year) %>%
+      tidytable::pivot_wider(names_from = age, values_from = prop) %>%
+      tidytable::arrange(year) -> age_comp
+
+
+    if(!is.null(rmv_yrs)){
+      age_comp  %>%
+        tidytable::filter(!(year %in% rmv_yrs)) -> age_comp
+    }
+
+    if(!is.null(id)) {
+      vroom::vroom_write(age_comp, here::here(year, "data", "output", paste0(area, "_bts_age_comp", id, ".csv")), ",")
+      age_comp
+    } else if(isTRUE(save)){
+      vroom::vroom_write(age_comp, here::here(year, "data", "output", paste0(area, "_bts_age_comp.csv")), ",")
+      age_comp
+    }
+
+    age_comp
+
+  }
+
 #' fishery length composition analysis
 #'
 #' @param year assessment year
@@ -755,6 +877,106 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rm
       dplyr::mutate(SA_Index = 1,
                     n_s = mean(n_s, na.rm = T),
                     n_h = mean(n_h, na.rm = T)) %>%
+      tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
+  }
+
+  if(!is.null(rmv_yrs)){
+    size_comp  %>%
+      tidytable::filter(!(year %in% rmv_yrs)) -> size_comp
+  }
+
+  if(!is.null(alt)) {
+    write.csv(size_comp, here::here(year, alt, "data", paste0(area, "_bts_sizecomp.csv")), row.names = F)
+  } else if(isTRUE(save)){
+    write.csv(size_comp, here::here(year, "data", "output", paste0(area, "_bts_sizecomp.csv")), row.names = F)
+  }
+    size_comp
+
+}
+
+#' GAP trawl survey length composition analysis
+#'
+#' @param year assessment year
+#' @param area survey area default = "goa"
+#' @param lenbins lenbin file if left NULL it looks for (year/data/user_input/len_bins.csv")
+#' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
+#' @param rmv_yrs any survey years to exclude
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param save
+#' @return
+#' @export 
+#'
+#' @examples
+#'
+bts_gap_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
+
+
+  area = tolower(area)
+  read.csv(here::here(year, "data", "raw", paste0(area, "_bts_gap_sizecomp_data.csv"))) %>%
+    dplyr::rename_with(tolower)  %>% 
+    dplyr::rename(length = length_mm, total = population_count) -> df
+
+  if(is.null(lenbins)){
+    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
+  }
+
+  if(!is.vector(lenbins)){
+    lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
+  }
+
+  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_gap_length_data.csv"))) %>%
+    dplyr::rename_with(tolower) %>%
+    dplyr::filter(!is.na(length)) %>%
+    dplyr::mutate(length = length / 10) -> dat
+
+  if("frequency" %in% colnames(dat)){
+    dat %>%
+      tidytable::summarise(n_s = sum(frequency),
+                       n_h = length(unique(hauljoin)),
+                      .by = year) -> dat
+  } else {
+    dat %>%
+      dplyr::group_by(year) %>%
+      dplyr::summarise(n_s = dplyr::n(),
+                       n_h = length(unique(hauljoin))) %>%
+      dplyr::ungroup() -> dat
+  }
+
+  if(!is.null(bysex)){
+    df %>%
+      dplyr::rename_with(tolower) %>%
+      tidytable::filter(summary_depth < 995, year != 2001) %>%
+      tidyr::pivot_longer(cols = c(males, females, unsexed)) %>%
+      tidytable:: mutate(bin = round((length / 10 - 0.5) / 20, 1) * 20 + 1) %>%
+      tidytable::filter(bin %in% lenbins) %>%
+      tidytable::group_by(year, name, bin) %>%
+      tidytable::summarise(value = sum(value)) %>%
+      tidytable::ungroup() %>%
+      tidyr::complete(bin, tidyr::nesting(year, name), fill = list(value = 0)) %>%
+      tidytable::group_by(year, name) %>%
+      tidytable::mutate(prop = value / sum(value)) %>%
+      dptidytablelyr::select(-value) %>%
+      tidytable::left_join(dat) %>%
+      tidytable::group_by(year) %>%
+      tidytable::mutate(SA_Index = 1,
+                    n_s = mean(n_s, na.rm = T),
+                    n_h = mean(n_h, na.rm = T)) %>%
+      tidyr::pivot_wider(names_from = bin, values_from = prop) -> size_comp
+  } else {
+    df %>%
+      tidytable::rename_with(tolower) %>%
+      tidytable::mutate(length = length / 10,
+                        length = ifelse(length >= max(lenbins), max(lenbins), length)) %>%
+      tidytable::filter(length %in% lenbins) %>%
+      tidytable::mutate(tot = sum(total), .by = year) %>%
+      tidytable::summarise(prop = sum(total) / mean(tot),
+                        .by = c(year, length)) %>%
+      tidytable::left_join(expand.grid(year = unique(.$year), length = lenbins), .) %>%
+      tidytable::replace_na(list(prop = 0)) %>%
+      tidytable::left_join(dat) %>%
+      tidytable::mutate(SA_Index = 1,
+                    n_s = mean(n_s, na.rm = T),
+                    n_h = mean(n_h, na.rm = T), .by = year) %>%
       tidyr::pivot_wider(names_from = length, values_from = prop) -> size_comp
   }
 
