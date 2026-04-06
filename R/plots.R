@@ -1,13 +1,65 @@
-#' Plot catch
+#' Plot cumulative annual catch
 #'
 #' @param year model year
-#' @param folder folder name model is in
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
 #' @return
 #' @export plot_catch
 #'
 #' @examples
+#' \dontrun{
+#' plot_cum_catch(year=2026)
+#' }
+plot_cum_catch <- function(year, save = TRUE) {
+  # set view
+  ggplot2::theme_set(afscassess::theme_report())
+
+  vroom::vroom(here::here(year, 'data', 'raw', 'fish_catch_data.csv')) %>%
+    tidytable::mutate(day = lubridate::yday(week_end_date)) %>%
+    tidytable::summarise(catch = sum(weight_posted),
+                         .by = c(year, day)) %>%
+    tidytable::mutate(cumsum = cumsum(catch),
+                      .by = year) -> df
+
+  df %>%
+    tidytable::filter(year==max(year)) %>%
+    tidytable::filter(day==max(day))  %>%
+    tidytable::mutate(date = as.Date(paste(year, "01", "01", sep = "-")) + day) -> pt
+
+  df %>%
+    ggplot2::ggplot(ggplot2::aes(day, cumsum, color = year, group = year)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point(data=pt, size = 2) +
+    scico::scale_color_scico("Year", palette = 'roma') +
+    ggplot2::scale_y_continuous(labels=scales::comma) +
+    ggplot2::xlab('Julian Day') +
+    ggplot2::ylab('Cumulative catch (t)') +
+    ggplot2::theme(legend.position.inside = c(x=0.2, y=0.8)) +
+    ggplot2::ggtitle(paste("Catch as of", pt$date)) -> fig
+
+  if(isTRUE(save)) {
+    if (!dir.exists(here::here(year, "figs"))){
+      dir.create(here::here(year, "figs"))
+    }
+    ggplot2::ggsave(fig, here::here(year, "figs", "cum_catch.png"),
+                    width = 6.5, height = 6.5, units = "in", dpi = 200)
+  }
+  fig
+}
+
+#' Plot cumulative annual catch
+#'
+#' @param year model year
+#' @param folder the model folder
+#' @param save default is TRUE, saves fig to the folder the model is in
+#'
+#' @return
+#' @export plot_catch
+#'
+#' @examples
+#' \dontrun{
+#' plot_cum_catch(year=2026)
+#' }
 plot_catch <- function(year, folder, save=TRUE){
 
   if (!dir.exists(here::here(year, folder, "processed"))){

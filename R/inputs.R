@@ -1,3 +1,20 @@
+# get last 3 year's TAC values
+#' @param year
+#' @param area "goa" or "bsai"
+#' @export
+get_tac <- function(year, area) {
+  yr = year
+  vroom::vroom(here::here(year, "data", "raw", "spces.csv")) %>%
+    filter(area_label == area) %>%
+    select(year, tac = total_allowable_catch) %>%
+    filter(year %in% (yr-3):(yr-1)) %>%
+    pull(tac)
+}
+q_specs(year = year, species = "NORK", area="GOA", db=akfin, save=FALSE) %>%
+  filter(area_label == "GOA") %>%
+  select(year, tac = total_allowable_catch) %>%
+  filter(year %in% (2026-3):(2026-1)) %>%
+  pull(tac) -> TAC
 
 #' clean up catch data
 #'
@@ -904,7 +921,7 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rm
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #' @return
-#' @export 
+#' @export
 #'
 #' @examples
 #'
@@ -913,7 +930,7 @@ bts_gap_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL
 
   area = tolower(area)
   read.csv(here::here(year, "data", "raw", paste0(area, "_bts_gap_sizecomp_data.csv"))) %>%
-    dplyr::rename_with(tolower)  %>% 
+    dplyr::rename_with(tolower)  %>%
     dplyr::rename(length = length_mm, total = population_count) -> df
 
   if(is.null(lenbins)){
