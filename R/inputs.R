@@ -1,20 +1,16 @@
 # get last 3 year's TAC values
 #' @param year
-#' @param area "goa" or "bsai"
+#' @param area "GOA" or "BSAI"
 #' @export
 get_tac <- function(year, area) {
   yr = year
-  vroom::vroom(here::here(year, "data", "raw", "spces.csv")) %>%
-    filter(area_label == area) %>%
-    select(year, tac = total_allowable_catch) %>%
-    filter(year %in% (yr-3):(yr-1)) %>%
-    pull(tac)
+  area = toupper(area)
+  vroom::vroom(here::here(year, "data", "raw", "specs.csv")) %>%
+    tidytable::filter(area_label == area) %>%
+    tidytable::select(year, tac = total_allowable_catch) %>%
+    tidytable::filter(year %in% (yr-3):(yr-1)) %>%
+    tidytable::pull(tac)
 }
-q_specs(year = year, species = "NORK", area="GOA", db=akfin, save=FALSE) %>%
-  filter(area_label == "GOA") %>%
-  select(year, tac = total_allowable_catch) %>%
-  filter(year %in% (2026-3):(2026-1)) %>%
-  pull(tac) -> TAC
 
 #' clean up catch data
 #'
