@@ -12,7 +12,6 @@
 #' @param len_bins file name (stored in the "user_input" folder) that has length bins
 #' @param ... future functions
 #'
-#' @return
 #' @export process_results
 #'
 #' @examples process_results (year = 2020, folder = m18.2, model_name = "goa_nr", dat_name = "goa_nr_2020", rec_age = 2, plus_age = 45, mcmc=FALSE, len_bins = "lbins.csv")
@@ -594,9 +593,10 @@ run_retro <- function(year, model, model_name, dat_name, mcmc = 10000000, mcsave
 
 }
 
+#' Fishery age comp table
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export fac_table
+#' @export
 fac_table <- function(year, model){
 
   options(scipen = 999)
@@ -625,9 +625,10 @@ fac_table <- function(year, model){
 
 }
 
+#' Fishery size comp table
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export fsc_table
+#' @export
 fsc_table <- function(year, model){
 
   options(scipen = 999)
@@ -656,9 +657,10 @@ fsc_table <- function(year, model){
 
 }
 
+#' Survey age comp table
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export sac_table
+#' @export
 sac_table <- function(year, model){
 
   options(scipen = 999)
@@ -687,9 +689,10 @@ sac_table <- function(year, model){
 
 }
 
+#' Survey size comp table
 #' @param year  assessment year
 #' @param model   model being evaluated (folder name)
-#' @export ssc_table
+#' @export
 ssc_table <- function(year, model){
 
   options(scipen = 999)

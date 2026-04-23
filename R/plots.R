@@ -145,8 +145,7 @@ plot_catch <- function(year, folder, save=TRUE){
 #' @param folder folder name model is in
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_biomass
+#' @export
 #'
 plot_biomass <- function(year, folder, save=TRUE) {
 
@@ -200,8 +199,7 @@ plot_biomass <- function(year, folder, save=TRUE) {
 #'
 #' @param year = assessment year
 #' @param folder = folder the model lives in
-#' @return
-#' @export plot_comps
+#' @export
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
 #' @examples
@@ -275,10 +273,8 @@ plot_comps <- function(year, folder, save = TRUE){
 #' @param model_name e.g. goa_nr_2020
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_phase
+#' @export
 #'
-#' @examples
 plot_phase <- function(year, folder, model_name, save = TRUE){
 
   if (!dir.exists(here::here(year, folder, "processed"))){
@@ -348,8 +344,7 @@ if(isTRUE(save)) {
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
 #'
-#' @return
-#' @export plot_re
+#' @export
 #'
 #' @examples
 #' \dontrun{
@@ -412,10 +407,8 @@ plot_re <- function(file, save=TRUE){
 #' @param rec_age age at first recruitment
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_rec
+#' @export
 #'
-#' @examples
 plot_rec <- function(year, folder, rec_age, save=TRUE){
 
   recs = paste0(rec_age, "+")
@@ -458,8 +451,7 @@ plot_rec <- function(year, folder, rec_age, save=TRUE){
 #' @param rec_age age at first recruitment
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_rec_ssb
+#' @export
 #'
 #' @examples plot_rec_ssb(year, folder, rec_age)
 plot_rec_ssb <- function(year, folder, rec_age, save=TRUE){
@@ -500,8 +492,7 @@ plot_rec_ssb <- function(year, folder, rec_age, save=TRUE){
 #' @param year model year
 #' @param folder folder model is in
 #' @param save default is TRUE, saves fig to the folder the model is in
-#' @return
-#' @export plot_selex
+#' @export
 #'
 #' @examples plot_selex(year, folder)
 plot_selex <- function(year, folder, save=TRUE){
@@ -539,8 +530,7 @@ plot_selex <- function(year, folder, save=TRUE){
 #' @param folder  folder model is in
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_survey
+#' @export
 #'
 #' @examples plot_survey(year, folder)
 plot_survey <- function(year, folder, save=TRUE){
@@ -586,14 +576,13 @@ plot_survey <- function(year, folder, save=TRUE){
   }
 }
 
-' Swath plot
+#' Swath plot
 #'
 #' @param year assessment year
 #' @param folder   the folder with the model in it
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_swath
+#' @export
 #'
 #' @examples plot_swath(year, folder)
 plot_swath <- function(year, folder, save=TRUE){
@@ -661,7 +650,7 @@ plot_swath <- function(year, folder, save=TRUE){
   }
 }
 
-' Parameter histogram plots
+#' Parameter histogram plots
 #'
 #' @param year assessment year
 #' @param folder   the folder with the model in it
@@ -669,8 +658,7 @@ plot_swath <- function(year, folder, save=TRUE){
 #' @param pars parameter names
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_params
+#' @export
 #'
 #' @examples plot_swath(year, folder)
 plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nattymort", "tot_biom", "F40","spawn_biom"), save=TRUE) {
@@ -816,15 +804,14 @@ plot_params <- function(year, folder, model_name, pars = c("q_srv1", "ABC", "nat
 }
 
 
-' retrospective plots
+#' retrospective plots
 #'
 #' @param year assessment year
 #' @param folder   the folder with the model in it
 #' @param n_retro = 10 number of years to retro
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
-#' @export plot_retro
+#' @export
 #'
 #' @examples plot_retro(year, folder)
 plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
@@ -976,13 +963,13 @@ plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
 }
 
 
-' Base plots
+#' Base plots
 #'
 #' @param year assessment year
 #' @param folder   the folder with the model in it
 #' @param model_name the name of your .tpl file
 #' @param rec_age recruitment age
-#' @export base_plots
+#' @export
 base_plots <- function(year, folder, model_name, rec_age) {
   if (!dir.exists(here::here(year, folder, "processed"))){
     stop("must run 'process_results()' before creating figures")

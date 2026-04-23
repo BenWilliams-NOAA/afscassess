@@ -1,5 +1,15 @@
-# get last 3 year's TAC values
-#' @param year
+run_model <- function(func, pars, data) {
+  obj = RTMB::MakeADFun(func, pars, data = data, silent = TRUE)
+  fit = nlminb(obj$par, obj$fn, obj$gr)
+  list(
+    report = obj$report(fit$par),
+    fit = fit,
+    sd = RTMB::sdreport(obj)
+  )
+}
+
+#' get last 3 year's TAC values
+#' @param year year of assessment
 #' @param area "GOA" or "BSAI"
 #' @export
 get_tac <- function(year, area) {
@@ -24,7 +34,7 @@ get_tac <- function(year, area) {
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save
 #'
-#' @return
+
 #' @export clean_catch
 #'
 #' @examples
@@ -136,10 +146,9 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #' @param save save to default location, default: TRUE
 #' @param id identifier will be appended to file name - "bts_biomass_vast, default:NULL
 #'
-#' @return
+
 #' @export bts_biomass
 #'
-#' @examples
 #'
 bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs = NULL, save = TRUE, id = NULL){
 
@@ -199,10 +208,9 @@ bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs 
 #' @param save save to default location, default: TRUE
 #' @param id identifier will be appended to file name - "bts_biomass_vast, default:NULL
 #'
-#' @return
+
 #' @export
 #'
-#' @examples
 #'
 bts_gap_biomass <- function(year, area = "goa", type = "region", file = NULL, rmv_yrs = NULL, save = TRUE, id = NULL){
 
@@ -210,10 +218,11 @@ bts_gap_biomass <- function(year, area = "goa", type = "region", file = NULL, rm
   type = tolower(type)
 
   if(is.null(file)){
+
     vroom::vroom(here::here(year, "data", "raw", paste0(area, "_", type, "_bts_biomass_data.csv"))) %>%
       dplyr::rename_with(tolower)  -> df
 
-    # sablefish are different...
+        # sablefish are different...
     if("summary_depth" %in% names(df)){
       df %>%
         dplyr::filter(summary_depth < 995, year != 2001) %>%
@@ -235,7 +244,15 @@ bts_gap_biomass <- function(year, area = "goa", type = "region", file = NULL, rm
     }
 
   } else {
+    if(grepl(".rds", file, ignore.case = TRUE)) {
+      readRDS(here::here(year, "data", "user_input", file)) %>%
+        tidytable::summarise(biomass = est / 1000,
+                             se = sqrt((exp(se^2) - 1) * exp(2 * log_est + se^2)) / 1000,
+                             lci = lwr / 1000,
+                             uci = upr / 1000, .by = year) -> sb
+    } else {
     vroom::vroom(here::here(year, "data", "user_input", file)) -> sb
+    }
   }
 
   if(!is.null(rmv_yrs)){
@@ -256,302 +273,343 @@ bts_gap_biomass <- function(year, area = "goa", type = "region", file = NULL, rm
 #' @param read_tester = looks for a file in the user_input folder, e.g., :"reader_tester.csv"
 #' @param species = "NORK"
 #' @param year = year of the assessment
-#' @param admb_home = location admb exists on your computer - if is "c:/admb" can leave NULL
 #' @param area = "GOA" (BSAI not currently setup)
 #' @param rec_age = recruitment age
 #' @param plus_age = max age for modeling
-#' @param max_age = max age for age error analysis - default = 100
+#' @param max_age = max age for age error analysis, default 100
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save = default is TRUE, FALSE outputs a list, names outputs to a data folder within a specific folder (e.g., save = "age_plus")
 #'
-#' @return
-#' @export age_error
+#' @export
 #'
 #' @examples ageage(species = "NORK", year = 2020, admb_home = NULL, area = "GOA", rec_age = 2, plus_age = 45, max_age = 100)
 
-age_error <- function(reader_tester, species, year, admb_home = NULL, area = "GOA", rec_age = 2, plus_age = 45, max_age = 100, alt = NULL, save = TRUE){
+age_error <- function(reader_tester, species, year, area = "goa", rec_age = 2, plus_age = 45, max_age = 100, alt = NULL, save = TRUE){
+  f_age_error <- function(pars, data) {
+    RTMB::getAll(pars, data)
+    s1 = exp(log_sigma1)
+    s2 = exp(log_sigma2)
 
+    # linear interpolation of sd across age range
+    sigma_a = s1 + (age - min_age) * ((s2 - s1) / (max_age - min_age))
 
-  rt = vroom::vroom(here::here(year, "data", "user_input", reader_tester))
-  area = toupper(area)
+    # percent agreement likelihood
+    p_corr  = RTMB::pnorm(0.5, 0, sigma_a) - RTMB::pnorm(-0.5, 0, sigma_a)
+    p_corr1 = RTMB::pnorm(-0.5, 0, sigma_a) - RTMB::pnorm(-1.5, 0, sigma_a)
+    p_corr2 = RTMB::pnorm(-1.5, 0, sigma_a) - RTMB::pnorm(-2.5, 0, sigma_a)
 
-  if(is.null(admb_home)){
-    R2admb::setup_admb()
-  } else {
-    R2admb::setup_admb(admb_home)
+    phat = p_corr^2 + 2 * p_corr1^2 + 2 * p_corr2^2
+
+    RTMB::REPORT(s1); RTMB::REPORT(s2); RTMB::REPORT(sigma_a)
+    return(sum(sqrt(ss) * (phat - ape)^2))
   }
-
-  nages = length(rec_age:plus_age)
+  target_species = sp_switch(species)
+  # data prep
+  rt = vroom::vroom(here::here(year, "data", "user_input", reader_tester))
 
   rt %>%
-    tidytable::filter(Species %in% sp_switch(species),
-                      Region == area,
-                      Read_Age > 0,
-                      Test_Age > 0,
-                      Final_Age > 0) %>%
     tidytable::rename_with(tolower) %>%
-    tidytable::summarise(freq = tidytable::n(),
-                         .by = c(test_age, read_age)) -> dat
-
-
-  tidytable::left_join(expand.grid(test_age = unique(dat$test_age),
-                               read_age = unique(dat$read_age)),
-                   dat) %>%
-    tidytable::replace_na(list(freq = 0)) %>%
-    tidytable::mutate(num = tidytable::case_when(test_age != read_age ~ freq),
-                      .by = test_age) %>%
-    tidytable::summarise(num = sum(num, na.rm = TRUE),
-                     den = sum(freq),
-                     .by = test_age) %>%
-    tidytable::mutate(ape = 1 - (num / den),
-                      ape = ifelse(is.nan(ape), 0, ape)) %>%
+    tidytable::filter(species %in% target_species,
+                      region == toupper(area),
+                      read_age > 0, test_age > 0, final_age > 0) %>%
+    tidytable::summarise(freq = .N, .by = c(test_age, read_age)) %>%
+    # Use tidytable's complete logic to fill missing age combinations
+    tidytable::complete(test_age = full_seq(test_age, 1),
+                        read_age = full_seq(read_age, 1),
+                        fill = list(freq = 0)) %>%
+    tidytable::summarise(num = sum(freq[test_age != read_age]),
+                         den = sum(freq), .by = test_age) %>%
+    tidytable::mutate(ape = tidytable::replace_na(1 - (num / den), 0)) %>%
     tidytable::select(age = test_age, ape, ss = den) %>%
-    tidytable::left_join(data.frame(age = min(dat$test_age):max(dat$test_age)), .) %>%
-    tidytable::replace_na(list(ape = -9, ss = -9)) -> dats
+    tidytable::filter(ss > 0) -> dats
 
-  c("# Number of obs", nrow(dats),
-    "# Age vector", dats$age,
-    "# Percent agreement vector", dats$ape,
-    "# Sample size vector", dats$ss) %>%
-    write.table(here::here(year, "data", "models", "ageage", "ageage.dat"),
-                sep="", quote=F, row.names=F, col.names=F)
+  # reference original data range to maintain the correct slope
+  min_dat_age = min(dats$age)
+  max_dat_age = max(dats$age)
 
-  setwd(here::here(year, "data", "models", "ageage"))
-  R2admb::compile_admb("ageage", verbose = TRUE)
-  R2admb::run_admb("ageage", verbose=TRUE)
+  # RTMB estimation
+  dat_age = list(age = dats$age, ape = dats$ape, ss = dats$ss, min_age = min_dat_age, max_age = max_dat_age)
+  pars = list(log_sigma1 = log(0.5), log_sigma2 = log(5.0))
 
-  setwd(here::here())
-  read.delim(here::here(year, "data", "models", "ageage", "ageage.std"), sep="") %>%
-    dplyr::filter(grepl("_a", name)) %>%
-    dplyr::bind_cols(dats) %>%
-    dplyr::select(age, value) -> sds
+  res = RTMButils::run_model(f_age_error,
+                  pars = pars,
+                  data = dat_age,
+                  proj = FALSE)$rpt
 
-  fit = lm(value ~ age, data = sds)
-
-  # fit out to age 100 (aka: max_age)
-  data.frame(age = rec_age:max_age) %>%
-    dplyr::mutate(ages_sd = predict(fit, .)) -> fits
-
-  ages = fits$age
-
-  mtx100 = matrix(nrow = nrow(fits), ncol = nrow(fits))
-  colnames(mtx100) = rownames(mtx100) = ages
-
-  for(j in 1:nrow(fits)){
-    mtx100[j,1] = pnorm(ages[1] + 0.5,
-                        ages[j],
-                        fits[which(fits[,1] == ages[j]), 2])
+  # results
+  s1 <- res$s1
+  s2 <- res$s2
 
 
-    for(i in 2:(nrow(fits) - 1)){
-      mtx100[j,i] = pnorm(ages[i] + 0.5,
-                          ages[j],
-                          fits[which(fits[,1] == ages[j]), 2]) -
-        pnorm(ages[i-1] + 0.5,
-              ages[j],
-              fits[which(fits[,1] == ages[j]), 2])
+  # calculate sd's for all ages
+  tidytable::tidytable(age = rec_age:max_age) %>%
+    tidytable::mutate(sd = s1 + (age - min_dat_age) * ((s2 - s1) / (max_dat_age - min_dat_age))) -> fits
 
-    }
-    mtx100[j,nrow(fits)] = 1 - sum(mtx100[j, 1:(nrow(fits) - 1)])
+  # outer() to build the probability matrix without a loop
+  # rows = true age (j), cols = observed age (i)
+  mtx100 = outer(fits$age, fits$age, function(true_a, obs_a) {
+    # match SDs to the true age
+    s = fits$sd[match(true_a, fits$age)]
+    # standard interval probability calculation
+    pnorm(obs_a + 0.5, true_a, s) - pnorm(obs_a - 0.5, true_a, s)
+  })
+
+  # Correct the edges (0 to first bin and last bin to Infinity)
+  mtx100[, 1] = pnorm(fits$age[1] + 0.5, fits$age, fits$sd)
+  mtx100[, ncol(mtx100)] = 1 - rowSums(mtx100[, 1:(ncol(mtx100)-1)])
+
+  colnames(mtx100) = rownames(mtx100) = fits$age
+
+  # collapse to assessment dimensions
+  n_model_ages = length(rec_age:plus_age)
+  ae_model = mtx100[, 1:n_model_ages]
+  ae_model[, n_model_ages] = rowSums(mtx100[, n_model_ages:ncol(mtx100)])
+
+  # trim matrix where the plus group is fully absorbed
+  ae_model = ae_model[1:which(ae_model[, n_model_ages] >= 0.999)[1], ]
+
+  result = list(mtx100 = mtx100, ae_sd = fits, ae_model = round(ae_model, 4))
+
+  if(isTRUE(save) | !is.null(alt)) {
+    path = if(!is.null(alt)) here::here(year, alt, "data") else here::here(year, "data", "output")
+    if(!dir.exists(path)) dir.create(path, recursive = TRUE)
+    vroom::vroom_write(as.data.frame(mtx100), file.path(path, "ae_mtx.csv"), ",")
+    vroom::vroom_write(fits, file.path(path, "ae_sd.csv"), ",")
+    vroom::vroom_write(as.data.frame(ae_model), file.path(path, "ae_model.csv"), ",")
   }
 
-  # Compute ageing error matrix for model
-  ae_Mdl = matrix(nrow=length(ages), ncol=nages)
-  ae_Mdl[, 1:(nages-1)] = as.matrix(mtx100[, 1:(nages-1)])
-  ae_Mdl[, nages] = rowSums(mtx100[, nages:length(ages)])
-  ae_Mdl = round(ae_Mdl, digits=4)
-  r = which(ae_Mdl[, nages]>=0.999)[1]
-  ae_Mdl = ae_Mdl[1:r,]
+  return(result)
+}
 
 
-  if(!is.null(alt)){
-    write.csv(mtx100, here::here(year, alt, "data", paste0("ae_mtx_", max_age, ".csv")), row.names = F)
-    vroom::vroom_write(fits,  here::here(year,alt, "data", "ae_SD.csv"), ",")
-    write.csv(ae_Mdl,  here::here(year, alt, "data", "ae_model.csv"), row.names = F)
-    ae_Mdl
-  } else if(isTRUE(save)){
-    write.csv(mtx100, here::here(year, "data", "output", paste0("ae_mtx_", max_age, ".csv")), row.names = F)
-    vroom::vroom_write(fits,  here::here(year,"data", "output", "ae_SD.csv"), ",")
-    write.csv(ae_Mdl,  here::here(year, "data", "output", "ae_model.csv"), row.names = F)
-    ae_Mdl
+prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) {
+
+  # 1. Setup metadata
+  max_age_err <- rec_age + model_ages - 1
+  age_range <- rec_age:max_age_err
+
+  # 2. Clean and summarize length frequency (dat)
+  len_clean <- length_data %>%
+    tidytable::rename_with(tolower) %>%
+    tidytable::filter(year >= 1990, !is.na(length))
+
+  if(!("frequency" %in% names(len_clean))){
+    dat <- len_clean %>% tidytable::summarise(tot = .N, .by = length)
   } else {
-    list(mtx100 = mtx100, ae_sd = fits, ae_model = ae_Mdl)
+    dat <- len_clean %>% tidytable::summarise(tot = sum(frequency), .by = length)
   }
 
+  L_total <- sum(dat$tot)
+
+  # 3. Size at Age (SAA) - Matches your original "inter" and weighting
+  age_clean <- age_data %>%
+    tidytable::rename_with(tolower) %>%
+    tidytable::filter(year >= 1990, age %in% age_range)
+
+  laa_stats <- age_clean %>%
+    tidytable::select(age, length) %>%
+    tidytable::filter(.N > 1, .by = age) %>%
+    tidytable::mutate(n_l = .N, .by = length) %>%
+    tidytable::mutate(sample_size = .N, .by = age) %>%
+    tidytable::left_join(dat, by = "length") %>%
+    # prop calculation: (n_observed_at_age_length / n_at_length) * total_sampled_at_length
+    # Since we are grouping by age/length, dplyr::n() is the count in that cell
+    tidytable::mutate(prop = .N / n_l * tot, .by = c(age, length)) %>%
+    tidytable::distinct(age, length, .keep_all = TRUE) %>%
+    # Calculate lbar first so it's available for SD calculation
+    tidytable::mutate(lbar = sum(prop * length) / sum(prop) * 0.1, .by = age) %>%
+    tidytable::summarise(
+      sample_size = mean(sample_size),
+      lbar = first(lbar),
+      sd = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - lbar)^2)),
+      .by = age
+    ) %>%
+    tidytable::filter(sd >= 0.01)
+
+  # 4. Length-Weight (LW)
+  lw_data <- age_clean %>%
+    tidytable::filter(!is.na(age), length > 0, !is.na(weight)) %>%
+    tidytable::filter(.N > 1, .by = age) %>%
+    tidytable::summarise(wbar = mean(weight, na.rm = TRUE),
+                         sd = sd(weight, na.rm = TRUE), .by = length) %>%
+    tidytable::drop_na()
+
+  # 5. Weight at Age (WAA) - The complex Kimura/Viteri method
+  waa_stats <- age_clean %>%
+    tidytable::filter(!is.na(age), !is.na(weight)) %>%
+    tidytable::filter(.N > 1, .by = age) %>%
+    tidytable::mutate(n_al = .N, .by = c(age, length)) %>%
+    tidytable::mutate(n_l = .N, .by = length) %>%
+    tidytable::filter(n_l > 1) %>%
+    tidytable::left_join(dat %>%
+                           tidytable::mutate(alpha_l = tot / L_total), by = "length") %>%
+    tidytable::summarise(
+      wbar_la = mean(weight),
+      # replace_na ensures single-fish bins don't break the sum
+      v_wbar_la = tidytable::replace_na(var(weight) / .N, 0),
+      theta_la = .N / first(n_l),
+      r_la = (tot / L_total) * (.N / first(n_l)),
+      sample_size = first(n_al),
+      alpha_l = first(alpha_l),
+      n_l = first(n_l),
+      .by = c(age, length)
+    ) %>%
+    # Multi-step mutate to ensure theta_a and wbar are available for variance
+    tidytable::mutate(theta_a = sum(r_la), .by = age) %>%
+    tidytable::mutate(wbar = sum(r_la * wbar_la) / sum(r_la), .by = age) %>%
+    tidytable::mutate(
+      v_r_la = tidytable::replace_na(
+        alpha_l^2 * theta_la * (1 - theta_la) / (n_l - 1) + alpha_l * (theta_la - theta_a)^2 / L_total,
+        0),
+      .by = age
+    ) %>%
+    tidytable::summarise(
+      wbar = first(wbar),
+      sd = sqrt(sum(r_la^2 * v_wbar_la + (wbar_la - wbar)^2 * v_r_la, na.rm = TRUE) / (first(theta_a)^2)) * sqrt(sum(sample_size)),
+      sample_size = sum(sample_size),
+      .by = age
+    ) %>%
+    tidytable::filter(sample_size >= 30) %>%
+    tidytable::arrange(age)
+
+  # 6. Final Return List
+  list(dat_saa = list(age = laa_stats$age,
+                      n = laa_stats$sample_size,
+                      lbar = laa_stats$lbar,
+                      sd = laa_stats$sd),
+       dat_lw = list(length = lw_data$length,
+                     wbar = lw_data$wbar,
+                     sd = lw_data$sd),
+       dat_waa = list(age = waa_stats$age,
+                      wbar = waa_stats$wbar,
+                      sd = waa_stats$sd),
+       laa_stats = laa_stats,
+       lw_data = lw_data,
+       waa_stats = waa_stats)
 }
 
 #' size at age analysis
 #'
 #' @param year analysis year
-#' @param area area data are from e.g., "goa"
-#' @param admb_home location admb exists on your computer
+#' @param age_data gap survey specimen data
+#' @param length_data gap survey length data
+#' @param lenbins length bins used e.g., 15:45
 #' @param rec_age recruitment age
-#' @param max_age max age for age error analysis - default = 100
-#' @param lenbins length bin file
-#' @param alt #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
+#' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save in the default location
 
-#' @return
-#' @export size_at_age
+
+#' @export
 #'
-#' @examples
-size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, alt=NULL, save = TRUE){
-  area = tolower(area)
 
-  if(is.null(admb_home)){
-    R2admb::setup_admb()
-  } else {
-    R2admb::setup_admb(admb_home)
-  }
-
+saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, save = TRUE) {
+  cmb <- function(f, d) function(p) f(p, d)
   if (!file.exists(here::here(year, "data", "output", "ae_model.csv"))){
     stop("You must first run the age-error function 'ageage()")
   } else {
     nages_m = nrow(read.csv(here::here(year, "data", "output", "ae_model.csv")))
   }
+  ages = rec_age:(rec_age + nages_m - 1)
 
+  prep = prep_alw_data(age_data, length_data, nages_m, len_bins, rec_age)
 
-  ages_m = rec_age:(rec_age + nages_m - 1)
+  # model: saa
+  f_saa <- function(pars, data) {
+    RTMB::getAll(pars, data)
+    linf = exp(log_linf)
+    k = exp(log_k)
+    alpha = exp(log_alpha)
+    beta = exp(log_beta)
 
-  if(is.null(lenbins)){
-    stop("Please provide a vector of length buns or the file that is in the user_input folder e.g.,('lengthbins.csv') with a column names 'len_bins'")
-  }
+    pred = linf * (1 - exp(-k * (age - t0)))
+    yvar = log(1 + sd^2 / lbar^2)
+    rss = sum(0.5 * (log(2 * pi * yvar * lbar^2) + (log(pred) - log(lbar))^2 / yvar))
 
-  if(!is.vector(lenbins)){
-    lenbins =  vroom::vroom(here::here(year, "data", "user_input", lenbins), delim = ",")$len_bins
-  }
+    lpred_sd = alpha * log(age) + beta
+    lnll = sum(sqrt(n) * (log(lpred_sd) - log(sd))^2)
 
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_specimen_data.csv"))) %>%
-    tidytable::rename_with(tolower) %>%
-    tidytable::select(year, age, length) %>%
-    tidytable::filter(year>=1990, !is.na(age))  %>%
-    tidytable::select(-year) %>%
-    tidytable::filter(tidytable::n()>1, .by = age) %>%
-    tidytable::mutate(n_l = tidytable::n(), .by = length) %>%
-    tidytable::arrange(age, length) %>%
-    tidytable::mutate(sample_size = tidytable::n(), .by = age) -> inter
-
-  vroom::vroom(here::here(year, "data", "raw", paste0(area, "_bts_length_data.csv"))) %>%
-    tidytable::rename_with(tolower) %>%
-    tidytable::filter(year>=1990, !is.na(length)) -> dat
-
-  if(is.null(dat$frequency)){
-    dat %>%
-      tidytable::summarise(tot = tidytable::n(), .by = length) -> dat
-  } else {
-    dat %>%
-      tidytable::select(frequency, length) %>%
-      tidytable::summarise(tot = sum(frequency), .by = length) -> dat
-  }
-
-  dat %>%
-    tidytable::left_join(inter, .) %>%
-    tidytable::mutate(prop =  dplyr::n() / n_l * tot, .by = c(age, length)) %>%
-    tidytable::distinct() %>%
-    tidytable::mutate(sample_size = mean(sample_size),
-                      Lbar = sum(prop * length) / sum(prop) * 0.1,
-                      .by=age) %>%
-    tidytable::summarise(SD_Lbar = sqrt(1 / (sum(prop) - 1) * sum(prop * (length / 10 - Lbar)^2)),
-                         sample_size=mean(sample_size),
-                         Lbar = mean(Lbar),
-                         .by = age) %>%
-    tidytable::filter(SD_Lbar>=0.01) -> laa_stats
-
-  if(!is.null(alt)){
-    vroom::vroom_write(laa_stats, here::here(year, alt, "data", "laa_stats.csv"))
-  } else {
-    vroom::vroom_write(laa_stats, here::here(year, "data", "output", "laa_stats.csv"))
-  }
-
-  laa_stats
-
-
-  # run models ----
-
-  setwd(here::here(year, "data", "models", "vonb"))
-  # Estimate mean length
-  c("# Data file for LVB model of mean length",
-    "# Number of ages (nages)",
-    nrow(laa_stats),
-    "# Ages with observed mean length (ages)",
-    paste(laa_stats$age, collapse=" "),
-    "# Observed mean length (Lbar_obs)",
-    paste(laa_stats$Lbar, collapse=" "),
-    "# SD in Observed mean length (Lbar_obs)",
-    paste(laa_stats$SD_Lbar, collapse=" ")) %>%
-    write.table("vbl.dat", quote=FALSE, row.names=FALSE, col.names=FALSE)
-
-  R2admb::compile_admb("vbl", verbose = TRUE)
-  R2admb::run_admb("vbl", verbose = TRUE)
-
-  # retrieve output
-
-  REP = readLines("vbl.rep", warn=FALSE)
-  Linf = as.numeric(sub(".*? ", "", REP[1]))
-  k = as.numeric(sub(".*? ", "", REP[2]))
-  t0 = as.numeric(sub(".*? ", "", REP[3]))
-
-
-  # run model 2
-  setwd(here::here(year, "data", "models", "length_sd"))
-
-  c("# Data file for LVB model of mean length",
-    "# Number of ages (nages)",
-    nrow(laa_stats),
-    "# Ages with observed mean length (ages)",
-    paste(laa_stats$age, collapse=" "),
-    "# SD in Observed mean length (Lbar_obs)",
-    paste(laa_stats$SD_Lbar, collapse=" "),
-    "# Sample size vector",
-    paste(laa_stats$sample_size, collapse=" ")) %>%
-    write.table("lengthsd.dat", quote=FALSE, row.names=FALSE, col.names=FALSE)
-
-
-  R2admb::compile_admb("lengthsd", verbose = TRUE)
-  R2admb::run_admb("lengthsd", verbose = TRUE)
-  STD <- read.delim("lengthsd.std", sep="")
-  a <- STD$value[1]
-  b <- STD$value[2]
-  (params <- cbind(Linf, k, t0, a, b))
-
-  if(!is.null(alt)) {
-    write.csv(params, here::here(year, alt, "data", "lbar_params.csv"), row.names=FALSE)
-  } else {
-    write.csv(params, here::here(year, "data", "output", "lbar_params.csv"), row.names=FALSE)
+    RTMB::REPORT(linf); RTMB::REPORT(k); RTMB::REPORT(t0);
+    RTMB::REPORT(alpha); RTMB::REPORT(beta)
+    return(rss + lnll)
   }
 
 
+  rep_saa = RTMButils::run_model(model = f_saa,
+                                 pars = list(log_linf = log(50),
+                                             log_k = log(0.2),
+                                             t0 = -0.1,
+                                             log_alpha = log(0.07),
+                                             log_beta = log(2.07)),
+                                 data = prep$dat_saa,
+                                 proj = FALSE)$rpt
 
-  # Compute Sz@A transition matrix
-
-  expand.grid(age = ages_m,
-              length = lenbins) %>%
-    dplyr::mutate(Lbar = Linf * (1 - exp(-k * (age - t0))),
-                  Lbar = ifelse(age == max(ages_m), 0.5 * (Lbar + Linf), Lbar),
-                  SD_Lbar = a * log(age) + b,
-                  prob = ifelse(length == min(length),
-                                pnorm(length + 0.5, Lbar, SD_Lbar),
-                                pnorm(length + 0.5, Lbar, SD_Lbar) -
-                                  pnorm(length -0.5, Lbar, SD_Lbar)),
-                  prob = round(prob, digits = 4)) %>%
-    dplyr::select(age, length, prob) %>%
-    tidyr::pivot_wider(names_from = length, values_from = prob) %>%
-    dplyr::mutate(!!rev(names(.))[1] := 1 - rowSums(.[2:(ncol(.) - 1)])) %>%
-    dplyr::mutate_at(2:ncol(.), round, 4) -> saa
-
-  if(!is.null(alt)){
-    vroom::vroom_write(saa, here::here(year, alt, "data", "saa.csv"), ",")
-    saa
-  } else if(isTRUE(save)){
-    vroom::vroom_write(saa, here::here(year, "data", "output", "saa.csv"), ",")
-    saa
-  } else {
-    saa
+  # model: length-weight
+  f_lw <- function(pars, data) {
+    RTMB::getAll(pars, data)
+    alpha = exp(log_alpha)
+    beta = exp(log_beta)
+    pred = alpha * length^beta
+    yvar = log(1 + sd^2 / wbar^2)
+    rss = sum(0.5 * (log(2 * pi * yvar * wbar^2) + (log(pred) - log(wbar))^2 / yvar))
+    RTMB::REPORT(alpha); RTMB::REPORT(beta)
+    return(rss)
   }
 
+  rep_lw = RTMButils::run_model(f_lw,
+                                pars = list(log_alpha=log(0.01),
+                                            log_beta=log(3)),
+                                data = prep$dat_lw,
+                                proj = FALSE)$rpt
 
+  # model: waa
+  f_waa <- function(pars, data) {
+    RTMB::getAll(pars, data)
+    winf = exp(log_winf)
+    k = exp(log_k)
+    beta = exp(log_beta)
+    pred = winf * (1 - exp(-k * (age - t0)))^beta
+    yvar = log(1 + sd^2 / wbar^2)
+    rss = sum(0.5 * (log(2 * pi * yvar * wbar^2) + (log(pred) - log(wbar))^2 / yvar))
+    RTMB::REPORT(winf); RTMB::REPORT(k); RTMB::REPORT(t0); RTMB::REPORT(beta)
+    return(rss)
+  }
+
+  rep_waa = RTMButils::run_model(f_waa,
+                                 pars = list(log_winf=log(max(prep$dat_waa$wbar)), log_k=log(0.1), t0=0, log_beta=log(rep_lw$beta)),
+                                 data = prep$dat_waa,
+                                 proj = FALSE)$rpt
+
+  # final matrices
+
+  saa_matrix = tidytable::expand_grid(age = ages, length = len_bins) %>%
+    tidytable::mutate(
+      Lbar = rep_saa$linf * (1 - exp(-rep_saa$k * (age - rep_saa$t0))),
+      Lbar = ifelse(age == max(age), 0.5 * (Lbar + rep_saa$linf), Lbar),
+      sd_L = rep_saa$alpha * log(age) + rep_saa$beta,
+      prob = ifelse(length == min(length),
+                    pnorm(length + 0.5, Lbar, sd_L),
+                    pnorm(length + 0.5, Lbar, sd_L) - pnorm(length - 0.5, Lbar, sd_L))
+    ) %>%
+    tidytable::select(age, length, prob) %>%
+    tidytable::pivot_wider(names_from = length, values_from = prob)
+
+  waa_table = tidytable::tidytable(age = ages) %>%
+    tidytable::mutate(
+      wbar = rep_waa$winf * (1 - exp(-rep_waa$k * (age - rep_waa$t0)))^rep_waa$beta,
+      wbar = ifelse(age == max(age), 0.5 * (wbar + rep_waa$winf), wbar)
+    )
+
+  if(isTRUE(save) | !is.null(alt)) {
+    path = if(!is.null(alt)) here::here(year, alt, "data") else here::here(year, "data", "output")
+    if(!dir.exists(path)) dir.create(path, recursive = TRUE)
+    vroom::vroom_write(as.data.frame(saa_matrix), file.path(path, "saa.csv"), ",")
+    vroom::vroom_write(waa_table, file.path(path, "waa.csv"), ",")
+    vroom::vroom_write(as.data.frame(rep_saa), file.path(path, "params_saa.csv"), ",")
+    vroom::vroom_write(as.data.frame(rep_waa), file.path(path, "params_waa.csv"), ",")
+  }
+
+  return(list(saa = saa_matrix, waa = waa_table, params_saa = rep_saa, params_waa = rep_waa))
 }
-
 #' fishery age composition analysis
 #'
 #' @param year assessment year
@@ -562,7 +620,7 @@ size_at_age <- function(year, area, admb_home = NULL, rec_age, lenbins = NULL, a
 #' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_age_comp-use.csv' in the data/output folder
 #' @param save whether to save the file - wll be placed in "year/data/output" folder
 #'
-#' @return
+
 #' @export  fish_age_comp
 #'
 #' @examples
@@ -618,7 +676,7 @@ fish_age_comp <- function(year, fishery = "fish", rec_age, plus_age, rmv_yrs = N
 #' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'bts_age_comp-use.csv' in the data/output folder
 #' @param save save in the default location
 #'
-#' @return
+
 #' @export bts_age_comp
 #'
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
@@ -680,7 +738,7 @@ bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, 
 #' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'bts_age_comp-use.csv' in the data/output folder
 #' @param save save in the default location
 #'
-#' @return
+
 #' @export
 #'
 #' @examples bts_gap_age_comp(year = 2020, rec_age = 2, plus_age = 45)
@@ -738,12 +796,12 @@ bts_gap_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NU
 #' @param rec_age recruitment age
 #' @param rmv_yrs any survey years to exclude
 #' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_length_comp-use.csv' in the data/output folder
-#' @param save
+#' @param save default TRUE
 #'
-#' @return
+
 #' @export fish_length_comp
 #'
-#' @examples
+
 fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rmv_yrs = NULL, id=NULL, save = TRUE){
 
   if(is.null(lenbins)){
@@ -765,7 +823,7 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
     tidytable::ungroup() -> ages
 
   vroom::vroom(here::here(year, "data", "raw", paste0(fishery,"_length_data.txt")),
-               delim = ",",
+               delim = "\t",
                col_type = c(haul_join="c", port_join="c")) %>%
     tidytable::filter(!(year %in% c(unique(ages$year), yr))) %>%
     tidytable::mutate(tot = sum(frequency),
@@ -812,11 +870,10 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
 #' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
 #' @param rmv_yrs any survey years to exclude
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
-#' @param save
-#' @return
+#' @param save default TRUE
+
 #' @export bts_length_comp
 #'
-#' @examples
 #'
 bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
@@ -915,11 +972,10 @@ bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rm
 #' @param bysex should the length comp be calculated by sex - default is null (not differentiated)
 #' @param rmv_yrs any survey years to exclude
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
-#' @param save
-#' @return
+#' @param save default TRUE
+
 #' @export
 #'
-#' @examples
 #'
 bts_gap_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
@@ -1015,7 +1071,7 @@ bts_gap_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL
 #' @param area currently fixed at "goa"
 #' @param alt alternate folder to save to - will be placed in "year/alt/data" folder
 #' @param save save in the default location
-#' @return
+
 #' @export weight_at_age
 #'
 #' @examples weight_at_age(year = 2020, admb_home = "C:/Program Files (x86)/ADMB-12.1", rec_age = 2)

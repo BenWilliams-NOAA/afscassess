@@ -4,7 +4,6 @@
 #' @param models year and folder the models are in e.g., c('2020, plus_age', '2020, plus_length')
 #' @param save default is TRUE, saves fig to the folder the model is in
 #'
-#' @return
 #' @export plot_compare_biomass
 plot_compare_biomass <- function(year, models = c('2020, plus_age', '2020, plus_length'), save=TRUE) {
 
