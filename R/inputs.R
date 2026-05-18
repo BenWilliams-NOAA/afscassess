@@ -384,7 +384,7 @@ age_error <- function(reader_tester, species, year, area = "goa", rec_age = 2, p
 
 prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) {
 
-  # 1. Setup metadata
+   # 1. Setup metadata
   max_age_err <- rec_age + model_ages - 1
   age_range <- rec_age:max_age_err
 
@@ -401,7 +401,7 @@ prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) 
 
   L_total <- sum(dat$tot)
 
-  # 3. Size at Age (SAA) - Matches your original "inter" and weighting
+  # 3. Size at Age (SAA) 
   age_clean <- age_data %>%
     tidytable::rename_with(tolower) %>%
     tidytable::filter(year >= 1990, age %in% age_range)
@@ -412,11 +412,8 @@ prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) 
     tidytable::mutate(n_l = .N, .by = length) %>%
     tidytable::mutate(sample_size = .N, .by = age) %>%
     tidytable::left_join(dat, by = "length") %>%
-    # prop calculation: (n_observed_at_age_length / n_at_length) * total_sampled_at_length
-    # Since we are grouping by age/length, dplyr::n() is the count in that cell
     tidytable::mutate(prop = .N / n_l * tot, .by = c(age, length)) %>%
     tidytable::distinct(age, length, .keep_all = TRUE) %>%
-    # Calculate lbar first so it's available for SD calculation
     tidytable::mutate(lbar = sum(prop * length) / sum(prop) * 0.1, .by = age) %>%
     tidytable::summarise(
       sample_size = mean(sample_size),
@@ -426,53 +423,61 @@ prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) 
     ) %>%
     tidytable::filter(sd >= 0.01)
 
-  # 4. Length-Weight (LW)
-  lw_data <- age_clean %>%
-    tidytable::filter(!is.na(age), length > 0, !is.na(weight)) %>%
-    tidytable::filter(.N > 1, .by = age) %>%
+  # 4. Length-Weight (LW) -
+  lw_data <- age_data %>%
+    tidytable::rename_with(tolower) %>%
+    tidytable::filter(year >= 1990, length > 0, !is.na(weight)) %>%
     tidytable::summarise(wbar = mean(weight, na.rm = TRUE),
                          sd = sd(weight, na.rm = TRUE), .by = length) %>%
     tidytable::drop_na()
 
-  # 5. Weight at Age (WAA) - The complex Kimura/Viteri method
-  waa_stats <- age_clean %>%
-    tidytable::filter(!is.na(age), !is.na(weight)) %>%
-    tidytable::filter(.N > 1, .by = age) %>%
+  # 5. weight at age 
+  
+  age_step1 <- age_data %>%
+    tidytable::rename_with(tolower) %>%
+    tidytable::filter(year >= 1990, !is.na(age)) %>%
+    tidytable::mutate(SS = .N, .by = age) %>% 
+    tidytable::filter(SS >= 2)
+  
+  valid_lengths <- age_step1 %>%
+    tidytable::summarise(n_l_aged = .N, .by = length) %>%
+    tidytable::filter(n_l_aged >= 2) %>%
+    tidytable::pull(length)
+  
+  dat_legacy <- dat %>% tidytable::filter(length %in% valid_lengths)
+  L_legacy <- sum(dat_legacy$tot)
+  
+  waa_stats <- age_step1 %>%
+    tidytable::filter(length %in% valid_lengths) %>%
     tidytable::mutate(n_al = .N, .by = c(age, length)) %>%
     tidytable::mutate(n_l = .N, .by = length) %>%
-    tidytable::filter(n_l > 1) %>%
-    tidytable::left_join(dat %>%
-                           tidytable::mutate(alpha_l = tot / L_total), by = "length") %>%
+    tidytable::left_join(dat_legacy %>%
+                           tidytable::mutate(alpha_l = tot / L_legacy), by = "length") %>%
     tidytable::summarise(
-      wbar_la = mean(weight),
-      # replace_na ensures single-fish bins don't break the sum
-      v_wbar_la = tidytable::replace_na(var(weight) / .N, 0),
+      wbar_la = mean(weight, na.rm = TRUE),
+      v_wbar_la = var(weight, na.rm = TRUE) / .N,
       theta_la = .N / first(n_l),
-      r_la = (tot / L_total) * (.N / first(n_l)),
-      sample_size = first(n_al),
+      r_la = (first(tot) / L_legacy) * (.N / first(n_l)),
+      SS = first(SS), 
       alpha_l = first(alpha_l),
       n_l = first(n_l),
       .by = c(age, length)
     ) %>%
-    # Multi-step mutate to ensure theta_a and wbar are available for variance
-    tidytable::mutate(theta_a = sum(r_la), .by = age) %>%
-    tidytable::mutate(wbar = sum(r_la * wbar_la) / sum(r_la), .by = age) %>%
     tidytable::mutate(
-      v_r_la = tidytable::replace_na(
-        alpha_l^2 * theta_la * (1 - theta_la) / (n_l - 1) + alpha_l * (theta_la - theta_a)^2 / L_total,
-        0),
-      .by = age
+      theta_a = sum(r_la), 
+      wbar = sum(r_la * wbar_la, na.rm = TRUE) / sum(r_la), 
+      v_r_la = alpha_l^2 * theta_la * (1 - theta_la) / (n_l - 1) + alpha_l * (theta_la - theta_a)^2 / L_legacy,
+      .by = age 
     ) %>%
     tidytable::summarise(
       wbar = first(wbar),
-      sd = sqrt(sum(r_la^2 * v_wbar_la + (wbar_la - wbar)^2 * v_r_la, na.rm = TRUE) / (first(theta_a)^2)) * sqrt(sum(sample_size)),
-      sample_size = sum(sample_size),
-      .by = age
+      sd = sqrt(sum(r_la^2 * v_wbar_la + (wbar_la - wbar)^2 * v_r_la, na.rm = TRUE) / (first(theta_a)^2)) * sqrt(first(SS)),
+      sample_size = first(SS),
+      .by = age 
     ) %>%
-    tidytable::filter(sample_size >= 30) %>%
+    tidytable::filter(!is.na(sd), sd > 0, sample_size >= 30) %>%
     tidytable::arrange(age)
 
-  # 6. Final Return List
   list(dat_saa = list(age = laa_stats$age,
                       n = laa_stats$sample_size,
                       lbar = laa_stats$lbar,
@@ -514,34 +519,51 @@ saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, sa
   prep = prep_alw_data(age_data, length_data, nages_m, len_bins, rec_age)
 
   # model: saa
-  f_saa <- function(pars, data) {
+  f_saa_mean <- function(pars, data) {
     RTMB::getAll(pars, data)
     linf = exp(log_linf)
     k = exp(log_k)
-    alpha = exp(log_alpha)
-    beta = exp(log_beta)
-
     pred = linf * (1 - exp(-k * (age - t0)))
     yvar = log(1 + sd^2 / lbar^2)
     rss = sum(0.5 * (log(2 * pi * yvar * lbar^2) + (log(pred) - log(lbar))^2 / yvar))
-
-    lpred_sd = alpha * log(age) + beta
-    lnll = sum(sqrt(n) * (log(lpred_sd) - log(sd))^2)
-
-    RTMB::REPORT(linf); RTMB::REPORT(k); RTMB::REPORT(t0);
-    RTMB::REPORT(alpha); RTMB::REPORT(beta)
-    return(rss + lnll)
+    
+    RTMB::REPORT(linf); RTMB::REPORT(k); RTMB::REPORT(t0)
+    return(rss)
   }
 
+ f_saa_sd <- function(pars, data) {
+    RTMB::getAll(pars, data)
+    
+    # 1. standard linear space (no exp() bounds) to match admb
+    lpred_sd = alpha * log(age) + beta 
+    
+    # 2. ADMB Likelihood
+    lnll = sum(sqrt(n) * (log(lpred_sd) - log(sd))^2) 
+    
+    RTMB::REPORT(alpha); RTMB::REPORT(beta)
+    return(lnll)
+  }
 
-  rep_saa = RTMButils::run_model(model = f_saa,
-                                 pars = list(log_linf = log(50),
-                                             log_k = log(0.2),
-                                             t0 = -0.1,
-                                             log_alpha = log(0.07),
-                                             log_beta = log(2.07)),
-                                 data = prep$dat_saa,
-                                 proj = FALSE)$rpt
+  rep_saa_sd = RTMButils::run_model(model = f_saa_sd,
+                                    # Use exact ADMB initialization values!
+                                    pars = list(alpha = 0.005, beta = 0.5), 
+                                    data = prep$dat_saa, proj = FALSE)$rpt
+
+  # rep_saa_sd = RTMButils::run_model(model = f_saa_sd,
+  #                                     pars = list(log_alpha = log(5), beta = -2), 
+  #                                     data = prep$dat_saa, proj = FALSE)$rpt
+  
+ 
+  rep_saa_mean = RTMButils::run_model(model = f_saa_mean,
+                                 pars = list(log_linf = log(50), log_k = log(0.2), t0 = -0.1),
+                                 data = prep$dat_saa, proj = FALSE)$rpt
+
+  # Combine them into a single list so the rest of your script still works!
+  rep_saa = list(linf = rep_saa_mean$linf, 
+                 k = rep_saa_mean$k, 
+                 t0 = rep_saa_mean$t0, 
+                 alpha = rep_saa_sd$alpha, 
+                 beta = rep_saa_sd$beta)
 
   # model: length-weight
   f_lw <- function(pars, data) {
@@ -593,12 +615,24 @@ saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, sa
                     pnorm(length + 0.5, Lbar, sd_L) - pnorm(length - 0.5, Lbar, sd_L))
     ) %>%
     tidytable::select(age, length, prob) %>%
-    tidytable::pivot_wider(names_from = length, values_from = prob)
+    tidytable::pivot_wider(names_from = length, values_from = prob) 
+  
+  # deal with plus group
+  nc = ncol(saa_matrix)
+  last_col_name = names(saa_matrix)[nc]
+  
+  # coerce to data.frame explicitly for the column slice so it behaves predictably
+  saa_matrix[[last_col_name]] = 1 - rowSums(as.data.frame(saa_matrix)[, 2:(nc - 1)])
+  
+  # apply the rounding matrix-wide
+  saa_matrix = saa_matrix %>% 
+    tidytable::mutate(dplyr::across(2:nc, ~ round(.x, 4)))
 
   waa_table = tidytable::tidytable(age = ages) %>%
     tidytable::mutate(
       wbar = rep_waa$winf * (1 - exp(-rep_waa$k * (age - rep_waa$t0)))^rep_waa$beta,
-      wbar = ifelse(age == max(age), 0.5 * (wbar + rep_waa$winf), wbar)
+      wbar = ifelse(age == max(age), 0.5 * (wbar + rep_waa$winf), wbar),
+      wbar = round(wbar, 1)
     )
 
   if(isTRUE(save) | !is.null(alt)) {
@@ -612,6 +646,7 @@ saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, sa
 
   return(list(saa = saa_matrix, waa = waa_table, params_saa = rep_saa, params_waa = rep_waa))
 }
+
 #' fishery age composition analysis
 #'
 #' @param year assessment year
