@@ -574,9 +574,11 @@ saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, sa
     return(rss)
   }
 
+  
   rep_waa = RTMButils::run_model(f_waa,
                                  pars = list(log_winf=log(max(prep$dat_waa$wbar)), log_k=log(0.1), t0=0, log_beta=log(rep_lw$beta)),
                                  data = prep$dat_waa,
+                                 map = list(log_beta = factor(NA)),
                                  proj = FALSE)$rpt
 
   # final matrices
@@ -753,22 +755,22 @@ bts_gap_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NU
 
 
     read.csv(here::here(year, "data", "raw", paste0(area, "_bts_gap_agecomp_data.csv"))) %>%
-      tidytable::filter(age >= rec_age) %>%
-      tidytable::mutate(tot = sum(population_count),
+      dplyr::filter(age >= rec_age) %>%
+      dplyr::mutate(tot = sum(population_count),
                         age = ifelse(age < plus_age, age, plus_age),
                         .by = year) %>%
-      tidytable::summarise(prop = sum(population_count) / mean(tot),
+      dplyr::summarise(prop = sum(population_count) / mean(tot),
                            .by = c(age, year)) %>%
       # tidytable::left_join(dat1) %>%
-      tidytable::left_join(expand.grid(year = unique(.$year),
+      dplyr::left_join(expand.grid(year = unique(.$year),
                                        age = rec_age:plus_age), .) %>%
-      tidytable::replace_na(list(prop = 0)) %>%
+      tidyr::replace_na(list(prop = 0)) %>%
       # tidytable::mutate(AA_Index = 1,
       #                   n_s = mean(n_s, na.rm = T),
       #                   n_h = mean(n_h, na.rm = T),
       #                   .by = year) %>%
-      tidytable::pivot_wider(names_from = age, values_from = prop) %>%
-      tidytable::arrange(year) -> age_comp
+      dplyr::pivot_wider(names_from = age, values_from = prop) %>%
+      dplyr::arrange(year) -> age_comp
 
 
     if(!is.null(rmv_yrs)){

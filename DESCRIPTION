@@ -25,6 +25,6 @@ Imports:
     magrittr,
     R2admb
 Remotes: afsc-assessments/afscdata     
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 3.10)

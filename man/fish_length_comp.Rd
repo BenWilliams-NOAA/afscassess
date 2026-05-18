@@ -27,7 +27,7 @@ fish_length_comp(
 
 \item{id}{id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_length_comp-use.csv' in the data/output folder}
 
-\item{save}{}
+\item{save}{default TRUE}
 }
 \description{
 fishery length composition analysis

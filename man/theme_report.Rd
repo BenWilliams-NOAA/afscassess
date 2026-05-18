@@ -7,13 +7,15 @@
 theme_report(base_size = 11, base_family = "Times")
 }
 \arguments{
-\item{base_family}{}
+\item{base_size}{font size}
+
+\item{base_family}{font family}
 }
 \description{
 Set figure theme for reports
 }
 \examples{
-
+\dontrun{
 theme_report(base_size = 11, base_family = "Times")
 
 Other fonts are available, though sans font is
@@ -24,5 +26,5 @@ theme_report(base_family = "")
 Updating font size is accomplished by changing the base_size.
 
 theme_report(base_size = 20, base_family = "")
-
+}
 }

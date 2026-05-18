@@ -26,6 +26,8 @@ bts_length_comp(
 \item{rmv_yrs}{any survey years to exclude}
 
 \item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
+
+\item{save}{default TRUE}
 }
 \description{
 trawl survey length composition analysis

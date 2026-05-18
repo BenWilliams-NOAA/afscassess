@@ -2,17 +2,22 @@
 % Please edit documentation in R/plots.R
 \name{plot_catch}
 \alias{plot_catch}
-\title{Plot catch}
+\title{Plot annual catch}
 \usage{
 plot_catch(year, folder, save = TRUE)
 }
 \arguments{
 \item{year}{model year}
 
-\item{folder}{folder name model is in}
+\item{folder}{the model folder}
 
 \item{save}{default is TRUE, saves fig to the folder the model is in}
 }
 \description{
-Plot catch
+Plot annual catch
+}
+\examples{
+\dontrun{
+plot_catch(year=2026)
+}
 }
