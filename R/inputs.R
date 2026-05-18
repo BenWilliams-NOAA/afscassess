@@ -402,17 +402,15 @@ prep_alw_data <- function(age_data, length_data, model_ages, len_bins, rec_age) 
   L_total <- sum(dat$tot)
 
   # 3. Size at Age (SAA) 
-  age_clean <- age_data %>%
+  laa_stats <- age_data %>%
     tidytable::rename_with(tolower) %>%
-    tidytable::filter(year >= 1990, age %in% age_range)
-
-  laa_stats <- age_clean %>%
+    tidytable::filter(year >= 1990, !is.na(age)) %>%
     tidytable::select(age, length) %>%
     tidytable::filter(.N > 1, .by = age) %>%
     tidytable::mutate(n_l = .N, .by = length) %>%
     tidytable::mutate(sample_size = .N, .by = age) %>%
     tidytable::left_join(dat, by = "length") %>%
-    tidytable::mutate(prop = .N / n_l * tot, .by = c(age, length)) %>%
+    tidytable::mutate(prop = .N / n_l * first(tot), .by = c(age, length)) %>%
     tidytable::distinct(age, length, .keep_all = TRUE) %>%
     tidytable::mutate(lbar = sum(prop * length) / sum(prop) * 0.1, .by = age) %>%
     tidytable::summarise(
