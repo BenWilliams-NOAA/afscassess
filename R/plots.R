@@ -128,7 +128,7 @@ plot_catch <- function(year, folder, save=TRUE){
     ggplot2::ylab("Catch (kt)") +
     ggplot2::xlab("Year") +
     ggplot2::expand_limits(y = 0) +
-    afscassess::scale_x_tickr(data=dat, var=year, start=1960) +
+    tickr::scale_x_tickr(data=dat, var=year, start=1960) +
     ggplot2::theme(legend.justification=c(1,0),
                    legend.position=c(0.98,0.8))
 
@@ -187,7 +187,7 @@ plot_biomass <- function(year, folder, save=TRUE) {
       ggplot2::facet_wrap(~name, dir = "v", scales = "free_y") +
       ggplot2::scale_y_continuous(name = "Biomass (kt)", labels = scales::comma) +
       ggplot2::expand_limits(y = 0) +
-      afscassess::scale_x_tickr(name = "Year", data=dat, var=year, to=10, start = 1960)
+      tickr::scale_x_tickr(name = "Year", data=dat, var=year, by=10, var_min = 1960)
 
     if(isTRUE(save)) {
         ggplot2::ggsave(here::here(year, folder, "figs", "est_biomass.png"),
@@ -239,7 +239,7 @@ plot_comps <- function(year, folder, save = TRUE){
                      axis.ticks.y = ggplot2::element_blank()) +
       ggplot2::xlab(Hmisc::capitalize(variable)) +
       ggplot2::ylab(paste0(Hmisc::capitalize(fleet)," ", variable,  " composition")) +
-      afscassess::scale_x_tickr(data=data, var=.data[[var]], start = 0, min = 5) +
+      tickr::scale_x_tickr(data=data, var=.data[[var]], var_min = 0) +
       ggplot2::theme(legend.position = "none")
   }
 
@@ -389,15 +389,13 @@ plot_re <- function(file, save=TRUE){
     ggplot2::facet_wrap(~region, scales = "free_y", nrow = 3, drop=TRUE) +
     ggplot2::ylab("Survey biomass (kt)") +
     ggplot2::xlab("Year") +
-    ggplot2::scale_x_continuous(breaks = funcr::tickr(dat, year, 5, start = 1980)$breaks,
-                                labels = funcr::tickr(dat, year, 5, start = 1980)$labels)
+    tickr::scale_x_tickr(dat, year, by=5, var_min= 1980)
 
   if(isTRUE(save)) {
     ggplot2::ggsave(here::here(year, model, "figs", "random_effect.png"),
                   width = 6.5, height = 6.5, units = "in", dpi = 200)
   }
 }
-
 
 
 #' Plot recruitment estimates
@@ -435,7 +433,7 @@ plot_rec <- function(year, folder, rec_age, save=TRUE){
     ggplot2::ggplot(ggplot2::aes(year, recruits)) +
     ggplot2::geom_col(width = 0.8, alpha = 0.6) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = lci, ymax = uci), width = 0.5) +
-    afscassess::scale_x_tickr(name = "Year", data= dat, var = year, to = 10, start = 1960) +
+    tickr::scale_x_tickr(name = "Year", data= dat, var = year, by= 10, var_min = 1960) +
     ggplot2::ylab(paste0("Age-", recs, " Recruitment (millions)"))
 
   if(isTRUE(save)) {
@@ -514,7 +512,7 @@ plot_selex <- function(year, folder, save=TRUE){
     ggplot2::geom_line() +
     scico::scale_color_scico_d(name = "", palette = 'roma', begin = 0.2)+
     ggplot2::ylab("Selectivity/Maturity\n") +
-    afscassess::scale_x_tickr(name = "Year", data=dat, var=age, to=10, start = 0) +
+    tickr::scale_x_tickr(name = "Year", data=dat, var=age, by=10, var_min = 0) +
     ggplot2::theme(legend.justification=c(1,0),
                    legend.position=c(0.9,0.2))
 
@@ -561,7 +559,7 @@ plot_survey <- function(year, folder, save=TRUE){
                               start = 0.8, end = 0.2) +
     ggplot2::scale_linetype_manual(name = "",
                                    values = c(0,1)) +
-    afscassess::scale_x_tickr(data=dat, var=year) +
+    tickr::scale_x_tickr(data=dat, var=year) +
     ggplot2::scale_y_continuous(labels = scales::comma) +
     ggplot2::xlab("Year") +
     ggplot2::ylab("Survey biomass (kt)") +
@@ -637,7 +635,7 @@ plot_swath <- function(year, folder, save=TRUE){
     ggplot2::geom_line(ggplot2::aes(y = median)) +
     ggplot2::guides(linetype = "none", fill = "none") +
     ggplot2::geom_ribbon(data = dat, ggplot2::aes(ymin = min, ymax = max), alpha = 0.07) +
-    afscassess::scale_x_tickr(data=dat, var=year, to=10, start = 1960) +
+    tickr::scale_x_tickr(data=dat, var=year, by=10, var_min = 1960) +
     ggplot2::ylab("Spawning biomass (kt)") +
     ggplot2::xlab("Year") +
     ggplot2::expand_limits(y = 0) +
@@ -917,9 +915,8 @@ plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
     ggplot2::expand_limits(y = 0) +
     scico::scale_fill_scico_d(palette = "roma") +
     scico::scale_color_scico_d(palette = "roma") +
-    funcr::theme_report() +
-    ggplot2::scale_x_continuous(breaks = afscassess::tickr(dat, year, 10, start = 1960)$breaks,
-                                labels = afscassess::tickr(dat, year, 10, start = 1960)$labels) +
+    afscassess::theme_report() +
+    tickr::scale_x_tickr(data=dat, var=year, by=10, var_min = 1960) +
     ggplot2::annotate(geom = "text", x=1963, y=Inf, hjust = -0.05, vjust = 2,
                       label = paste0("Mohn's rho = ", round(ssb_rho, 3)),
                       family = "Times") +
@@ -949,9 +946,8 @@ plot_retro <- function(year, folder, n_retro=10, save=TRUE) {
     ggplot2::expand_limits(y = 0) +
     scico::scale_fill_scico_d(palette = "roma") +
     scico::scale_color_scico_d(palette = "roma") +
-    funcr::theme_report() +
-    ggplot2::scale_x_continuous(breaks = funcr::tickr(dat, year, 10, start = 1960)$breaks,
-                                labels = funcr::tickr(dat, year, 10, start = 1960)$labels) +
+    afscassess::theme_report() +
+    tickr::scale_x_tickr(data=dat, var=year, by=10, var_min= 1960)
     ggplot2::theme(legend.position = "none") -> p2
 
   png(filename=here::here(year, folder, "figs", "retro.png"), width = 6.5, height = 6.5,
@@ -999,7 +995,7 @@ plot_F <- function(year, model) {
     ggplot2::geom_line() +
     ggplot2::expand_limits(y=0) +
     ggplot2::ylab("Fishing mortality rate (F)\n") +
-    afscassess::scale_x_tickr(data=dat, var=year, to=10, start = 0)
+    tickr::scale_x_tickr(data=dat, var=year, by=10, var_min = 0)
 
   dev.off()
 }
@@ -1024,7 +1020,7 @@ comp <- function(data, variable, fleet) {
                    axis.ticks.y = ggplot2::element_blank()) +
     ggplot2::xlab(Hmisc::capitalize(variable)) +
     ggplot2::ylab(paste0(Hmisc::capitalize(fleet)," ", variable,  " composition")) +
-    afscassess::scale_x_tickr(data=data, var=.data[[var]], start = 0, min = 5) +
+    tickr::scale_x_tickr(data=data, var=.data[[var]], var_min = 0) +
     ggplot2::theme(legend.position = "none")
 }
 
