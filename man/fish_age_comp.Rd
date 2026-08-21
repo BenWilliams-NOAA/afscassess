@@ -7,8 +7,10 @@
 fish_age_comp(
   year,
   fishery = "fish",
+  exp_meth = "marg",
   rec_age,
   plus_age,
+  lenbins = NULL,
   rmv_yrs = NULL,
   id = NULL,
   save = TRUE

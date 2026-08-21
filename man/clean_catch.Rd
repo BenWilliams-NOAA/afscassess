@@ -30,7 +30,7 @@ clean_catch(
 
 \item{alt}{alternate folder to save to - will be placed in "year/alt/data" folder}
 
-\item{save}{}
+\item{save}{true/false}
 
 \item{fishery}{identify the fishery default is "fsh"}
 }

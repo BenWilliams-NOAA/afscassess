@@ -44,8 +44,10 @@ export(sp_switch)
 export(ssc_table)
 export(theme_report)
 export(weight_at_age)
-importFrom(ggplot2,element_blank)
-importFrom(ggplot2,element_line)
-importFrom(ggplot2,element_rect)
-importFrom(ggplot2,element_text)
+importFrom(ggplot2,
+  element_blank,
+  element_line,
+  element_rect,
+  element_text
+)
 importFrom(magrittr,"%>%")
