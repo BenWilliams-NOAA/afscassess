@@ -648,9 +648,11 @@ saa_waa <- function(year, age_data, length_data, len_bins, rec_age, alt=NULL, sa
 #' fishery age composition analysis
 #'
 #' @param year assessment year
-#' @param fishery default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)
+#' @param fishery default is fish, change if age comps from multiple fisheries (e.g., fsh1, fsh2)
+#' @param exp_meth expansion method: 'marg' - use marginal ages (default), 'marg_len' - expand by marginal lengths thru alk, 'exp_len' - expand by expanded lengths thru alk
 #' @param rec_age recruitment age
 #' @param plus_age plus age group
+#' @param lenbins length bins in comp data
 #' @param rmv_yrs any years to remove form the age comp e.g. c(1987, 1989)
 #' @param id id a specific comp name - will be placed at end of file name e.g., id='use' will create 'fsh_age_comp-use.csv' in the data/output folder
 #' @param save whether to save the file - wll be placed in "year/data/output" folder

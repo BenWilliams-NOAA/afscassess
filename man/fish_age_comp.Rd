@@ -19,11 +19,15 @@ fish_age_comp(
 \arguments{
 \item{year}{assessment year}
 
-\item{fishery}{default is fsh, change if age comps from multiple fisheries (e.g., fsh1, fsh2)}
+\item{fishery}{default is fish, change if age comps from multiple fisheries (e.g., fsh1, fsh2)}
+
+\item{exp_meth}{expansion method: 'marg' - use marginal ages (default), 'marg_len' - expand by marginal lengths thru alk, 'exp_len' - expand by expanded lengths thru alk}
 
 \item{rec_age}{recruitment age}
 
 \item{plus_age}{plus age group}
+
+\item{lenbins}{length bins in comp data}
 
 \item{rmv_yrs}{any years to remove form the age comp e.g. c(1987, 1989)}
 
