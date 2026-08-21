@@ -802,7 +802,7 @@ bts_gap_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NU
       #                   n_s = mean(n_s, na.rm = T),
       #                   n_h = mean(n_h, na.rm = T),
       #                   .by = year) %>%
-      dplyr::pivot_wider(names_from = age, values_from = prop) %>%
+      tidyr::pivot_wider(names_from = age, values_from = prop) %>%
       dplyr::arrange(year) -> age_comp
 
 
