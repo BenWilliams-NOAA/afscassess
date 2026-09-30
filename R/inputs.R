@@ -151,7 +151,9 @@ clean_catch <- function(year, species, TAC = c(3333, 2222, 1111), discard = FALS
 #'
 #'
 bts_biomass <- function(year,area = "goa", type = "total", file = NULL, rmv_yrs = NULL, save = TRUE, id = NULL){
-
+    lifecycle::deprecate_stop(when = "2.0.0",
+                            what = "bts_biomass()",
+                          with = "bts_gap_biomass()")
   area = tolower(area)
   type = tolower(type)
 
@@ -675,7 +677,7 @@ fish_age_comp <- function(year, fishery = "fish", exp_meth = "marg", rec_age, pl
     tidytable::filter(age >= rec_age,
                       !(year %in% rmv_yrs),
                       !is.na(length),
-                      !is.na(performance)) %>%
+                      sample_type==1) %>%
     tidytable::mutate(age = ifelse(age > plus_age, plus_age, age)) -> clean_spec
 
   # generate standard summary info (n_s, n_h, AA_Index) for valid years
@@ -712,7 +714,7 @@ fish_age_comp <- function(year, fishery = "fish", exp_meth = "marg", rec_age, pl
       col_type = c(haul_join = "c", port_join = "c")) -> raw_len
     
     raw_len %>%
-      tidytable::filter(!(year %in% rmv_yrs), !is.na(length), !is.na(performance)) %>%
+      tidytable::filter(!(year %in% rmv_yrs), !is.na(length)) %>%
       tidytable::mutate(length = ifelse(length >= max(lenbins), max(lenbins), length), .by = year) -> clean_len
 
     valid_lengths <- clean_spec %>% 
@@ -811,7 +813,9 @@ fish_age_comp <- function(year, fishery = "fish", exp_meth = "marg", rec_age, pl
 #'
 #' @examples bts_age_comp(year = 2020, rec_age = 2, plus_age = 45)
 bts_age_comp <- function(year, area = "goa", rec_age, plus_age, rmv_yrs = NULL, id=NULL, save = TRUE){
-
+    lifecycle::deprecate_stop(when = "2.0.0",
+                            what = "bts_age_comp()",
+                          with = "bts_gap_age_comp()")
   area = tolower(area)
   read.csv(here::here(year, "data", "raw", paste0(area, "_bts_specimen_data.csv"))) %>%
     dplyr::filter(!is.na(age)) %>%
@@ -1007,7 +1011,9 @@ fish_length_comp <- function(year, fishery = "fish", rec_age, lenbins = NULL, rm
 #'
 bts_length_comp <- function(year, area = "goa", lenbins = NULL, bysex = NULL, rmv_yrs = NULL, alt=NULL, save = TRUE){
 
-
+  lifecycle::deprecate_stop(when = "2.0.0",
+                            what = "bts_length_comp()",
+                          with = "bts_gap_length_comp()")
   area = tolower(area)
   read.csv(here::here(year, "data", "raw", paste0(area, "_bts_sizecomp_data.csv"))) %>%
     dplyr::rename_with(tolower) -> df
